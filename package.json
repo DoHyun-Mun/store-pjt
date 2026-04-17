@@ -21,10 +21,15 @@
     "start": "cds-serve",
     "watch": "cds watch",
     "build": "cds build/all",
-    "watch-categories": "cds watch --open categories/webapp/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-products": "cds watch --open products/webapp/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-inventories": "cds watch --open inventories/webapp/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-purchaseorders": "cds watch --open purchaseorders/webapp/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-categories": "cds watch --open categories/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-products": "cds watch --open products/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-inventories": "cds watch --open inventories/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-purchaseorders": "cds watch --open purchaseorders/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-stores": "cds watch --open stores/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-suppliers": "cds watch --open suppliers/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-materials": "cds watch --open materials/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-storeproducts": "cds watch --open storeproducts/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-supplyorders": "cds watch --open supplyorders/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "cds": {
     "requires": {
@@ -50,6 +55,11 @@
     "app/categories",
     "app/products",
     "app/inventories",
-    "app/purchaseorders"
+    "app/purchaseorders",
+    "app/stores",
+    "app/suppliers",
+    "app/materials",
+    "app/storeproducts",
+    "app/supplyorders"
   ]
 }

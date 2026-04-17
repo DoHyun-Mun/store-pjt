@@ -6,3 +6,13 @@ using from './products/annotations';
 using from './inventories/annotations';
 
 using from './purchaseorders/annotations';
+
+using from './stores/annotations';
+
+using from './suppliers/annotations';
+
+using from './materials/annotations';
+
+using from './storeproducts/annotations';
+
+using from './supplyorders/annotations';

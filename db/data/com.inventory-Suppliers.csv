@@ -1,0 +1,6 @@
+ID,supplierCode,name,contactPerson,phone,email,address,city,country,paymentTerms,leadTime,rating,isActive,description,createdAt,createdBy,modifiedAt,modifiedBy
+e1000001-0001-4000-8000-000000000001,SUP-001,삼성전자,김태영,02-2255-0114,supply@samsung.com,서울시 서초구 서초대로 74길 11,서울,대한민국,NET30,7,4.8,true,전자제품 주요 공급업체,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+e1000001-0002-4000-8000-000000000002,SUP-002,한솔제지,박미경,042-629-1000,supply@hansol.com,대전시 대덕구 대화로 68,대전,대한민국,NET60,5,4.2,true,사무용품 및 종이류 공급업체,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+e1000001-0003-4000-8000-000000000003,SUP-003,퍼시스그룹,이재혁,02-2168-0700,supply@fursys.com,서울시 강남구 학동로 30길 45,서울,대한민국,NET30,21,4.5,true,사무용 가구 전문 공급업체,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+e1000001-0004-4000-8000-000000000004,SUP-004,CJ프레시웨이,정수현,02-2004-7000,supply@cjfreshway.com,서울시 중구 동호로 330,서울,대한민국,COD,3,4.0,true,식품 및 음료 공급업체,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+e1000001-0005-4000-8000-000000000005,SUP-005,애플코리아,David Kim,02-6712-6700,supply@apple.com,서울시 강남구 영동대로 517,서울,대한민국,NET30,14,4.9,true,Apple 공식 공급업체,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin

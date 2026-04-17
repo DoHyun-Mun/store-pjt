@@ -1,15 +1,19 @@
 /**
  * InventoryService - 커스텀 핸들러
- * 상품 재고 관리 시스템의 비즈니스 로직
+ * 점포 상품별 재고 발주 관리 시스템 비즈니스 로직
  */
 const cds = require('@sap/cds');
 const LOG = cds.log('InventoryService');
 
 module.exports = cds.service.impl(async function () {
-  const { Categories, Products, Inventories, PurchaseOrders } = this.entities;
+  const {
+    Categories, Products, Inventories, PurchaseOrders, Stores,
+    Suppliers, Materials, StoreProducts, ProductMaterials,
+    SupplyOrders, SupplyOrderItems
+  } = this.entities;
 
   // ════════════════════════════════════════════════════════════════════
-  // PurchaseOrders - BEFORE CREATE: 발주 번호 자동 채번
+  // PurchaseOrders - BEFORE CREATE: 발주 번호 자동 채번 + totalAmount 계산
   // ════════════════════════════════════════════════════════════════════
   this.before('CREATE', PurchaseOrders, async (req) => {
     const today = new Date();
@@ -18,7 +22,6 @@ module.exports = cds.service.impl(async function () {
     const d = String(today.getDate()).padStart(2, '0');
     const dateStr = `${y}${m}${d}`;
 
-    // 오늘 날짜의 마지막 채번 조회
     const result = await SELECT.one
       .from(PurchaseOrders)
       .columns('count(*) as cnt')
@@ -27,14 +30,65 @@ module.exports = cds.service.impl(async function () {
     const seq = String((result?.cnt || 0) + 1).padStart(4, '0');
     req.data.poNumber = `PO-${dateStr}-${seq}`;
 
-    // 기본 상태 설정
-    if (!req.data.status) {
-      req.data.status = 'Draft';
-    }
-
-    // 수량 검증
+    if (!req.data.status) req.data.status = 'Draft';
     if (!req.data.quantity || req.data.quantity < 1) {
       return req.error(400, '발주 수량은 1 이상이어야 합니다.');
+    }
+    // totalAmount 자동 계산
+    if (req.data.unitPrice && req.data.quantity) {
+      req.data.totalAmount = req.data.unitPrice * req.data.quantity;
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // PurchaseOrders - BEFORE UPDATE: 상태 직접 변경 방지 + totalAmount 재계산
+  // ════════════════════════════════════════════════════════════════════
+  this.before('UPDATE', PurchaseOrders, async (req) => {
+    if (req.data.status) {
+      const existing = await SELECT.one.from(PurchaseOrders).where({ ID: req.data.ID });
+      if (existing && req.data.status !== existing.status) {
+        return req.error(400, '상태는 직접 변경할 수 없습니다. 승인 요청/승인/반려/입고 처리 버튼을 사용하세요.');
+      }
+    }
+    // totalAmount 재계산
+    if (req.data.unitPrice != null || req.data.quantity != null) {
+      const existing = await SELECT.one.from(PurchaseOrders).where({ ID: req.data.ID });
+      if (existing) {
+        const qty = req.data.quantity ?? existing.quantity;
+        const price = req.data.unitPrice ?? existing.unitPrice;
+        req.data.totalAmount = (price || 0) * (qty || 0);
+      }
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // SupplyOrders - BEFORE CREATE: 주문 번호 자동 채번
+  // ════════════════════════════════════════════════════════════════════
+  this.before('CREATE', SupplyOrders, async (req) => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${y}${m}${d}`;
+
+    const result = await SELECT.one
+      .from(SupplyOrders)
+      .columns('count(*) as cnt')
+      .where`orderNumber like ${'SO-' + dateStr + '%'}`;
+
+    const seq = String((result?.cnt || 0) + 1).padStart(4, '0');
+    req.data.orderNumber = `SO-${dateStr}-${seq}`;
+
+    if (!req.data.status) req.data.status = 'Draft';
+    if (!req.data.orderDate) req.data.orderDate = new Date().toISOString().split('T')[0];
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // SupplyOrderItems - BEFORE CREATE/UPDATE: totalPrice 자동 계산
+  // ════════════════════════════════════════════════════════════════════
+  this.before(['CREATE', 'UPDATE'], SupplyOrderItems, async (req) => {
+    if (req.data.unitPrice != null && req.data.quantity != null) {
+      req.data.totalPrice = req.data.unitPrice * req.data.quantity;
     }
   });
 
@@ -58,8 +112,6 @@ module.exports = cds.service.impl(async function () {
     if (!item) return;
 
     const availableQty = (item.quantity || 0) - (item.reservedQty || 0);
-
-    // 상품의 안전재고 확인
     if (item.product_ID) {
       const product = await SELECT.one.from(Products).where({ ID: item.product_ID });
       if (product && product.safetyStock && availableQty < product.safetyStock) {
@@ -71,28 +123,26 @@ module.exports = cds.service.impl(async function () {
   });
 
   // ════════════════════════════════════════════════════════════════════
-  // Inventories - BEFORE CREATE: 중복 재고 레코드 방지
+  // Inventories - BEFORE CREATE: 중복 재고 레코드 방지 (product + store + warehouse)
   // ════════════════════════════════════════════════════════════════════
   this.before('CREATE', Inventories, async (req) => {
     if (req.data.product_ID && req.data.warehouse) {
-      const existing = await SELECT.one.from(Inventories).where({
+      const where = {
         product_ID: req.data.product_ID,
-        warehouse:  req.data.warehouse
-      });
+        warehouse: req.data.warehouse
+      };
+      if (req.data.store_ID) where.store_ID = req.data.store_ID;
+
+      const existing = await SELECT.one.from(Inventories).where(where);
       if (existing) {
-        return req.error(400, `동일한 상품/창고 조합의 재고 레코드가 이미 존재합니다. (ID: ${existing.ID})`);
+        return req.error(400, `동일한 상품/점포/창고 조합의 재고 레코드가 이미 존재합니다. (ID: ${existing.ID})`);
       }
     }
-
-    // 수량 음수 검증
     if (req.data.quantity != null && req.data.quantity < 0) {
       return req.error(400, '재고 수량은 0 이상이어야 합니다.');
     }
   });
 
-  // ════════════════════════════════════════════════════════════════════
-  // Inventories - BEFORE UPDATE: 수량 음수 검증
-  // ════════════════════════════════════════════════════════════════════
   this.before('UPDATE', Inventories, async (req) => {
     if (req.data.quantity != null && req.data.quantity < 0) {
       return req.error(400, '재고 수량은 0 이상이어야 합니다.');
@@ -104,15 +154,12 @@ module.exports = cds.service.impl(async function () {
   // ════════════════════════════════════════════════════════════════════
   this.on('submitOrder', PurchaseOrders, async (req) => {
     const { ID } = req.params[0];
-
     const po = await SELECT.one.from(PurchaseOrders).where({ ID });
     if (!po) return req.error(404, `발주를 찾을 수 없습니다: ${ID}`);
     if (po.status !== 'Draft') {
       return req.error(400, `승인 요청은 'Draft' 상태에서만 가능합니다. (현재: ${po.status})`);
     }
-
     await UPDATE(PurchaseOrders).set({ status: 'Submitted' }).where({ ID });
-
     const updated = await SELECT.one.from(PurchaseOrders).where({ ID });
     req.info(`발주 ${po.poNumber}이(가) 승인 요청되었습니다.`);
     return updated;
@@ -123,22 +170,16 @@ module.exports = cds.service.impl(async function () {
   // ════════════════════════════════════════════════════════════════════
   this.on('approveOrder', PurchaseOrders, async (req) => {
     const { ID } = req.params[0];
-
     const po = await SELECT.one.from(PurchaseOrders).where({ ID });
     if (!po) return req.error(404, `발주를 찾을 수 없습니다: ${ID}`);
     if (po.status !== 'Submitted') {
       return req.error(400, `승인은 'Submitted' 상태에서만 가능합니다. (현재: ${po.status})`);
     }
-
-    const approvedBy = req.user?.id || 'system';
-    const approvedAt = new Date().toISOString();
-
     await UPDATE(PurchaseOrders).set({
       status: 'Approved',
-      approvedBy,
-      approvedAt
+      approvedBy: req.user?.id || 'system',
+      approvedAt: new Date().toISOString()
     }).where({ ID });
-
     const updated = await SELECT.one.from(PurchaseOrders).where({ ID });
     req.info(`발주 ${po.poNumber}이(가) 승인되었습니다.`);
     return updated;
@@ -150,24 +191,17 @@ module.exports = cds.service.impl(async function () {
   this.on('rejectOrder', PurchaseOrders, async (req) => {
     const { ID } = req.params[0];
     const { reason } = req.data || {};
-
     const po = await SELECT.one.from(PurchaseOrders).where({ ID });
     if (!po) return req.error(404, `발주를 찾을 수 없습니다: ${ID}`);
     if (po.status !== 'Submitted') {
       return req.error(400, `반려는 'Submitted' 상태에서만 가능합니다. (현재: ${po.status})`);
     }
-
-    const approvedBy = req.user?.id || 'system';
-    const approvedAt = new Date().toISOString();
-    const note = reason ? `반려 사유: ${reason}` : (po.note || '');
-
     await UPDATE(PurchaseOrders).set({
       status: 'Rejected',
-      approvedBy,
-      approvedAt,
-      note
+      approvedBy: req.user?.id || 'system',
+      approvedAt: new Date().toISOString(),
+      note: reason ? `반려 사유: ${reason}` : (po.note || '')
     }).where({ ID });
-
     const updated = await SELECT.one.from(PurchaseOrders).where({ ID });
     req.info(`발주 ${po.poNumber}이(가) 반려되었습니다.`);
     return updated;
@@ -179,7 +213,6 @@ module.exports = cds.service.impl(async function () {
   this.on('receiveOrder', PurchaseOrders, async (req) => {
     const { ID } = req.params[0];
     const { warehouse } = req.data || {};
-
     const po = await SELECT.one.from(PurchaseOrders).where({ ID });
     if (!po) return req.error(404, `발주를 찾을 수 없습니다: ${ID}`);
     if (po.status !== 'Approved') {
@@ -189,55 +222,35 @@ module.exports = cds.service.impl(async function () {
     const targetWarehouse = warehouse || 'WH-DEFAULT';
     const now = new Date().toISOString();
 
-    // 발주 상태 업데이트
     await UPDATE(PurchaseOrders).set({
-      status:       'Received',
+      status: 'Received',
       receivedDate: now.split('T')[0]
     }).where({ ID });
 
-    // 재고 반영: 해당 product + warehouse 재고 조회
-    const inventory = await SELECT.one.from(Inventories).where({
-      product_ID: po.product_ID,
-      warehouse:  targetWarehouse
-    });
+    // 재고 반영: product + store + warehouse
+    const invWhere = { product_ID: po.product_ID, warehouse: targetWarehouse };
+    if (po.store_ID) invWhere.store_ID = po.store_ID;
+
+    const inventory = await SELECT.one.from(Inventories).where(invWhere);
 
     if (inventory) {
-      // 기존 재고 업데이트
       await UPDATE(Inventories).set({
-        quantity:    inventory.quantity + po.quantity,
+        quantity: inventory.quantity + po.quantity,
         lastUpdated: now
       }).where({ ID: inventory.ID });
-
       LOG.info(`재고 업데이트: ${targetWarehouse} +${po.quantity} (총: ${inventory.quantity + po.quantity})`);
     } else {
-      // 신규 재고 레코드 생성
-      const newId = cds.utils.uuid();
       await INSERT.into(Inventories).entries({
-        ID:          newId,
-        product_ID:  po.product_ID,
-        warehouse:   targetWarehouse,
-        quantity:    po.quantity,
+        ID: cds.utils.uuid(),
+        product_ID: po.product_ID,
+        store_ID: po.store_ID || null,
+        warehouse: targetWarehouse,
+        quantity: po.quantity,
         reservedQty: 0,
         availableQty: po.quantity,
         lastUpdated: now
       });
-
       LOG.info(`신규 재고 생성: ${targetWarehouse} 수량 ${po.quantity}`);
-    }
-
-    // 재고 부족 경고 체크
-    const product = await SELECT.one.from(Products).where({ ID: po.product_ID });
-    if (product) {
-      const inv = await SELECT.one.from(Inventories).where({
-        product_ID: po.product_ID,
-        warehouse:  targetWarehouse
-      });
-      if (inv) {
-        const avail = (inv.quantity || 0) - (inv.reservedQty || 0);
-        if (product.safetyStock && avail < product.safetyStock) {
-          req.warn(`재고 부족 경고: 가용 수량(${avail})이 안전 재고(${product.safetyStock}) 미만입니다.`);
-        }
-      }
     }
 
     const updated = await SELECT.one.from(PurchaseOrders).where({ ID });
@@ -246,22 +259,141 @@ module.exports = cds.service.impl(async function () {
   });
 
   // ════════════════════════════════════════════════════════════════════
-  // Products - AFTER READ: 추가 가공 없음 (향후 확장 가능)
+  // Action: confirmOrder (Draft → Confirmed) - SupplyOrders
   // ════════════════════════════════════════════════════════════════════
-  this.after('READ', Products, (data) => {
-    // Placeholder for future enhancements
+  this.on('confirmOrder', SupplyOrders, async (req) => {
+    const { ID } = req.params[0];
+    const so = await SELECT.one.from(SupplyOrders).where({ ID });
+    if (!so) return req.error(404, `공급 주문을 찾을 수 없습니다: ${ID}`);
+    if (so.status !== 'Draft') {
+      return req.error(400, `주문 확정은 'Draft' 상태에서만 가능합니다. (현재: ${so.status})`);
+    }
+
+    // items totalAmount 합산
+    const items = await SELECT.from(SupplyOrderItems).where({ supplyOrder_ID: ID });
+    const total = items.reduce((sum, it) => sum + (it.totalPrice || 0), 0);
+
+    await UPDATE(SupplyOrders).set({ status: 'Confirmed', totalAmount: total }).where({ ID });
+    const updated = await SELECT.one.from(SupplyOrders).where({ ID });
+    req.info(`공급 주문 ${so.orderNumber}이(가) 확정되었습니다.`);
+    return updated;
   });
 
   // ════════════════════════════════════════════════════════════════════
-  // PurchaseOrders - BEFORE UPDATE: 상태 전이 규칙 강제
+  // Action: shipOrder (Confirmed → Shipped) - SupplyOrders
   // ════════════════════════════════════════════════════════════════════
-  this.before('UPDATE', PurchaseOrders, async (req) => {
-    // 상태를 직접 수정하는 것을 방지 (Action을 통해서만 변경 가능)
-    if (req.data.status) {
-      const existing = await SELECT.one.from(PurchaseOrders).where({ ID: req.data.ID });
-      if (existing && req.data.status !== existing.status) {
-        return req.error(400, '상태는 직접 변경할 수 없습니다. 승인 요청/승인/반려/입고 처리 버튼을 사용하세요.');
+  this.on('shipOrder', SupplyOrders, async (req) => {
+    const { ID } = req.params[0];
+    const so = await SELECT.one.from(SupplyOrders).where({ ID });
+    if (!so) return req.error(404, `공급 주문을 찾을 수 없습니다: ${ID}`);
+    if (so.status !== 'Confirmed') {
+      return req.error(400, `출하는 'Confirmed' 상태에서만 가능합니다. (현재: ${so.status})`);
+    }
+    await UPDATE(SupplyOrders).set({ status: 'Shipped' }).where({ ID });
+    const updated = await SELECT.one.from(SupplyOrders).where({ ID });
+    req.info(`공급 주문 ${so.orderNumber}이(가) 출하되었습니다.`);
+    return updated;
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // Action: deliverOrder (Shipped → Delivered, 재고 반영) - SupplyOrders
+  // ════════════════════════════════════════════════════════════════════
+  this.on('deliverOrder', SupplyOrders, async (req) => {
+    const { ID } = req.params[0];
+    const so = await SELECT.one.from(SupplyOrders).where({ ID });
+    if (!so) return req.error(404, `공급 주문을 찾을 수 없습니다: ${ID}`);
+    if (so.status !== 'Shipped') {
+      return req.error(400, `배송 완료는 'Shipped' 상태에서만 가능합니다. (현재: ${so.status})`);
+    }
+
+    const now = new Date().toISOString();
+    await UPDATE(SupplyOrders).set({
+      status: 'Delivered',
+      deliveredDate: now.split('T')[0]
+    }).where({ ID });
+
+    // 각 품목에 대해 재고 반영
+    const items = await SELECT.from(SupplyOrderItems).where({ supplyOrder_ID: ID });
+    for (const item of items) {
+      if (!item.product_ID) continue;
+      const invWhere = { product_ID: item.product_ID };
+      if (so.store_ID) invWhere.store_ID = so.store_ID;
+
+      const inv = await SELECT.one.from(Inventories).where(invWhere);
+      if (inv) {
+        const newQty = so.orderType === 'RETURN'
+          ? Math.max(0, inv.quantity - item.quantity)
+          : inv.quantity + item.quantity;
+        await UPDATE(Inventories).set({ quantity: newQty, lastUpdated: now }).where({ ID: inv.ID });
+      } else if (so.orderType !== 'RETURN') {
+        await INSERT.into(Inventories).entries({
+          ID: cds.utils.uuid(),
+          product_ID: item.product_ID,
+          store_ID: so.store_ID || null,
+          warehouse: 'WH-DEFAULT',
+          quantity: item.quantity,
+          reservedQty: 0,
+          lastUpdated: now
+        });
       }
     }
+
+    const updated = await SELECT.one.from(SupplyOrders).where({ ID });
+    req.info(`공급 주문 ${so.orderNumber} 배송 완료. 재고가 반영되었습니다.`);
+    return updated;
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // Action: cancelOrder (Draft/Confirmed → Cancelled) - SupplyOrders
+  // ════════════════════════════════════════════════════════════════════
+  this.on('cancelOrder', SupplyOrders, async (req) => {
+    const { ID } = req.params[0];
+    const { reason } = req.data || {};
+    const so = await SELECT.one.from(SupplyOrders).where({ ID });
+    if (!so) return req.error(404, `공급 주문을 찾을 수 없습니다: ${ID}`);
+    if (!['Draft', 'Confirmed'].includes(so.status)) {
+      return req.error(400, `주문 취소는 'Draft' 또는 'Confirmed' 상태에서만 가능합니다. (현재: ${so.status})`);
+    }
+    await UPDATE(SupplyOrders).set({
+      status: 'Cancelled',
+      note: reason ? `취소 사유: ${reason}` : (so.note || '')
+    }).where({ ID });
+    const updated = await SELECT.one.from(SupplyOrders).where({ ID });
+    req.info(`공급 주문 ${so.orderNumber}이(가) 취소되었습니다.`);
+    return updated;
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // Products - BEFORE CREATE/UPDATE: 마진율 기반 판매가 자동 계산
+  // ════════════════════════════════════════════════════════════════════
+  this.before(['CREATE', 'UPDATE'], Products, async (req) => {
+    const d = req.data;
+    // costPrice 또는 marginRate가 변경되면 sellingPrice 자동 계산
+    if (d.costPrice != null || d.marginRate != null) {
+      let costPrice = d.costPrice;
+      let marginRate = d.marginRate;
+
+      // UPDATE 시 기존 값 보완
+      if (costPrice == null || marginRate == null) {
+        const existing = await SELECT.one.from(Products).where({ ID: d.ID });
+        if (existing) {
+          if (costPrice == null) costPrice = existing.costPrice;
+          if (marginRate == null) marginRate = existing.marginRate;
+        }
+      }
+
+      costPrice = Number(costPrice) || 0;
+      marginRate = Number(marginRate) || 0;
+
+      // 판매가 = 원가 × (1 + 마진율/100), 소수점 이하 반올림
+      req.data.sellingPrice = Math.round(costPrice * (1 + marginRate / 100));
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // Products - AFTER READ: placeholder
+  // ════════════════════════════════════════════════════════════════════
+  this.after('READ', Products, (data) => {
+    // Placeholder for future enhancements
   });
 });

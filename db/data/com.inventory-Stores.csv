@@ -1,0 +1,9 @@
+ID,storeCode,name,address,city,postalCode,country,phone,email,manager,storeType,isActive,description
+a1b2c3d4-e5f6-7890-abcd-ef1234567801,ST-001,강남점,서울시 강남구 테헤란로 152,서울,06236,대한민국,02-1234-5678,gangnam@store.co.kr,김민수,Store,true,강남역 인근 플래그십 매장
+a1b2c3d4-e5f6-7890-abcd-ef1234567802,ST-002,부산해운대점,부산시 해운대구 해운대로 570,부산,48094,대한민국,051-987-6543,haeundae@store.co.kr,이영희,Store,true,해운대 해변가 매장
+a1b2c3d4-e5f6-7890-abcd-ef1234567803,ST-003,판교물류센터,경기도 성남시 분당구 판교로 256,성남,13487,대한민국,031-456-7890,pangyo-wh@store.co.kr,박지훈,Warehouse,true,판교 테크노밸리 내 중앙 물류센터
+a1b2c3d4-e5f6-7890-abcd-ef1234567804,ST-004,온라인몰,서울시 마포구 월드컵북로 396,서울,03925,대한민국,02-5555-1234,online@store.co.kr,최수진,Online,true,공식 온라인 쇼핑몰 운영
+a1b2c3d4-e5f6-7890-abcd-ef1234567805,ST-005,대전둔산점,대전시 서구 둔산로 100,대전,35233,대한민국,042-333-4444,dunsan@store.co.kr,정한솔,Store,true,대전 둔산동 중심 상권 매장
+a1b2c3d4-e5f6-7890-abcd-ef1234567806,ST-006,인천송도점,인천시 연수구 송도과학로 32,인천,21984,대한민국,032-777-8888,songdo@store.co.kr,강다은,Store,true,송도 국제도시 내 신규 매장
+a1b2c3d4-e5f6-7890-abcd-ef1234567807,ST-007,용인물류센터,경기도 용인시 처인구 남동로 50,용인,17019,대한민국,031-222-3333,yongin-wh@store.co.kr,오태현,Warehouse,true,수도권 남부 물류 거점
+a1b2c3d4-e5f6-7890-abcd-ef1234567808,ST-008,광주충장점,광주시 동구 충장로 50,광주,61475,대한민국,062-111-2222,chungjang@store.co.kr,임서연,Store,false,리모델링으로 임시 휴점 중
