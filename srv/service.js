@@ -9,7 +9,9 @@ module.exports = cds.service.impl(async function () {
   const {
     Categories, Products, Inventories, PurchaseOrders, Stores,
     Suppliers, Materials, StoreProducts, ProductMaterials,
-    SupplyOrders, SupplyOrderItems
+    SupplyOrders, SupplyOrderItems,
+    Customers, CustomerPurchases, CustomerPurchaseItems,
+    DailySales, InventorySnapshots, DemandForecasts, OrderRecommendations
   } = this.entities;
 
   // ════════════════════════════════════════════════════════════════════
@@ -395,5 +397,74 @@ module.exports = cds.service.impl(async function () {
   // ════════════════════════════════════════════════════════════════════
   this.after('READ', Products, (data) => {
     // Placeholder for future enhancements
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // CustomerPurchases - BEFORE CREATE: 구매 번호 자동 채번 + totalAmount 계산
+  // ════════════════════════════════════════════════════════════════════
+  this.before('CREATE', CustomerPurchases, async (req) => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${y}${m}${d}`;
+
+    const result = await SELECT.one
+      .from(CustomerPurchases)
+      .columns('count(*) as cnt')
+      .where`purchaseNumber like ${'CP-' + dateStr + '%'}`;
+
+    const seq = String((result?.cnt || 0) + 1).padStart(4, '0');
+    req.data.purchaseNumber = `CP-${dateStr}-${seq}`;
+
+    if (!req.data.purchaseDate) {
+      req.data.purchaseDate = new Date().toISOString();
+    }
+
+    // items totalPrice & totalAmount 자동 계산
+    if (req.data.items && req.data.items.length > 0) {
+      let total = 0;
+      for (const item of req.data.items) {
+        item.totalPrice = (item.unitPrice || 0) * (item.quantity || 1) - (item.discount || 0);
+        total += item.totalPrice;
+      }
+      req.data.totalAmount = total;
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // CustomerPurchases - AFTER CREATE: 고객 통계 업데이트
+  // ════════════════════════════════════════════════════════════════════
+  this.after('CREATE', CustomerPurchases, async (data, req) => {
+    if (data.customer_ID) {
+      try {
+        const customer = await SELECT.one.from(Customers).where({ ID: data.customer_ID });
+        if (customer) {
+          await UPDATE(Customers).where({ ID: data.customer_ID }).set({
+            totalPurchaseAmount: (customer.totalPurchaseAmount || 0) + (data.totalAmount || 0),
+            visitCount: (customer.visitCount || 0) + 1,
+            lastVisitDate: new Date().toISOString().split('T')[0]
+          });
+        }
+      } catch (e) {
+        LOG.error('고객 통계 업데이트 실패:', e.message);
+      }
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // Customers - BEFORE CREATE: 고객 번호 자동 채번
+  // ════════════════════════════════════════════════════════════════════
+  this.before('CREATE', Customers, async (req) => {
+    if (!req.data.customerCode) {
+      const result = await SELECT.one
+        .from(Customers)
+        .columns('count(*) as cnt');
+      const seq = String((result?.cnt || 0) + 1).padStart(5, '0');
+      req.data.customerCode = `CUST-${seq}`;
+    }
+    if (!req.data.registeredAt) {
+      req.data.registeredAt = new Date().toISOString().split('T')[0];
+    }
   });
 });

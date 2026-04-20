@@ -1,0 +1,8 @@
+apiVersion: services.cloud.sap.com/v1
+kind: ServiceInstance
+metadata:
+  name: hana-hdi
+  namespace: fiori-mcp-test
+spec:
+  serviceOfferingName: hana
+  servicePlanName: hdi-shared

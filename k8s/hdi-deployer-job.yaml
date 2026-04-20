@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hdi-deployer
+  namespace: fiori-mcp-test
+  labels:
+    app: hdi-deployer
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app: hdi-deployer
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: hdi-deployer
+          image: "ghcr.io/dohyun-mun/fiori-mcp-test-hdi-deployer:latest"
+          imagePullPolicy: Always
+          env:
+            - name: NODE_ENV
+              value: "production"
+          volumeMounts:
+            - name: hana-hdi-secret-vol
+              mountPath: /bindings/hana-hdi
+              readOnly: true
+            - name: service-binding-root
+              mountPath: /etc/secrets/sapcp/hana/hana-hdi
+              readOnly: true
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+      volumes:
+        - name: hana-hdi-secret-vol
+          secret:
+            secretName: hana-hdi-secret
+        - name: service-binding-root
+          secret:
+            secretName: hana-hdi-secret

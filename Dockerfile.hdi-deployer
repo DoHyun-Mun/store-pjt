@@ -1,0 +1,39 @@
+# ══════════════════════════════════════════════════════════════════════
+# HDI Deployer for SAP HANA Cloud
+# Deploys CDS schema + CSV data to HDI Container
+# ══════════════════════════════════════════════════════════════════════
+
+# Stage 1: Build CDS artifacts
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install all dependencies (including devDependencies for cds build)
+RUN npm ci
+
+# Copy application source
+COPY . .
+
+# Run cds build --production to generate gen/db/ artifacts
+RUN npx cds build --production
+
+# Stage 2: HDI Deployer
+FROM node:22-alpine AS deployer
+
+WORKDIR /app
+
+# Copy gen/db artifacts (contains .hdbtable, .hdbview, .csv, undeploy.json, etc.)
+COPY --from=builder /app/gen/db ./
+
+# Install @sap/hdi-deploy
+RUN npm init -y && \
+    npm install @sap/hdi-deploy
+
+# The HDI deployer reads credentials from SERVICE_BINDING_ROOT or /bindings
+ENV SERVICE_BINDING_ROOT=/bindings
+
+# Run HDI deploy
+CMD ["node", "node_modules/@sap/hdi-deploy/deploy.js"]

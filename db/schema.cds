@@ -105,6 +105,7 @@ entity Stores : cuid, managed {
   inventories   : Association to many Inventories on inventories.store = $self;
   storeProducts : Association to many StoreProducts on storeProducts.store = $self;
   supplyOrders  : Association to many SupplyOrders on supplyOrders.store = $self;
+  customers     : Association to many Customers on customers.preferredStore = $self;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -185,4 +186,133 @@ entity SupplyOrderItems : cuid, managed {
   unitPrice    : Decimal(15,2) default 0;
   totalPrice   : Decimal(15,2) default 0;   // computed: quantity * unitPrice
   note         : String(200);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Customer (고객 마스터)
+// ═══════════════════════════════════════════════════════════════════════
+entity Customers : cuid, managed {
+  customerCode        : String(20) @mandatory @assert.unique;
+  name                : String(200) @mandatory;
+  phone               : String(20);
+  email               : String(100);
+  gender              : String(10);          // M / F / Other
+  birthDate           : Date;
+  ageGroup            : String(10);          // 10대/20대/.../60대+
+  address             : String(500);
+  city                : String(100);
+  postalCode          : String(10);
+  membershipType      : String(20) default 'REGULAR';  // REGULAR / SILVER / GOLD / VIP
+  registeredAt        : Date;
+  preferredStore      : Association to Stores;
+  isActive            : Boolean default true;
+  totalPurchaseAmount : Decimal(15,2) default 0;
+  visitCount          : Integer default 0;
+  lastVisitDate       : Date;
+  purchases           : Association to many CustomerPurchases on purchases.customer = $self;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CustomerPurchase (고객 구매 이력)
+// ═══════════════════════════════════════════════════════════════════════
+entity CustomerPurchases : cuid, managed {
+  purchaseNumber : String(20) @assert.unique;  // 자동 채번 CP-YYYYMMDD-XXXX
+  customer       : Association to Customers;
+  store          : Association to Stores;
+  purchaseDate   : DateTime;
+  totalAmount    : Decimal(15,2) default 0;
+  paymentMethod  : String(20);    // CASH / CARD / MOBILE / POINTS
+  note           : String(500);
+  items          : Composition of many CustomerPurchaseItems on items.purchase = $self;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CustomerPurchaseItem (구매 상세 품목)
+// ═══════════════════════════════════════════════════════════════════════
+entity CustomerPurchaseItems : cuid, managed {
+  purchase   : Association to CustomerPurchases;
+  product    : Association to Products;
+  quantity   : Integer not null default 1;
+  unitPrice  : Decimal(15,2) default 0;
+  totalPrice : Decimal(15,2) default 0;   // quantity × unitPrice
+  discount   : Decimal(15,2) default 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DailySales (일별 매출 집계 - ML 수요 예측 입력)
+// ═══════════════════════════════════════════════════════════════════════
+entity DailySales : cuid, managed {
+  store         : Association to Stores;
+  product       : Association to Products;
+  salesDate     : Date;
+  quantity      : Integer default 0;
+  revenue       : Decimal(15,2) default 0;
+  costAmount    : Decimal(15,2) default 0;
+  profit        : Decimal(15,2) default 0;   // revenue - costAmount
+  customerCount : Integer default 0;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// InventorySnapshot (재고 스냅샷 이력 - ML 재고 최적화 입력)
+// ═══════════════════════════════════════════════════════════════════════
+entity InventorySnapshots : cuid, managed {
+  store         : Association to Stores;
+  product       : Association to Products;
+  snapshotDate  : Date;
+  quantity      : Integer default 0;
+  reservedQty   : Integer default 0;
+  availableQty  : Integer default 0;
+  daysOfSupply  : Decimal(5,1) default 0;   // 재고일수
+  stockStatus   : String(20);               // NORMAL / LOW / OUT / OVERSTOCK
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DemandForecast (수요 예측 결과 - ML 출력 저장)
+// ═══════════════════════════════════════════════════════════════════════
+entity DemandForecasts : cuid, managed {
+  store          : Association to Stores;
+  product        : Association to Products;
+  forecastDate   : Date;
+  forecastQty    : Decimal(10,1) default 0;
+  confidenceLow  : Decimal(10,1) default 0;
+  confidenceHigh : Decimal(10,1) default 0;
+  modelName      : String(50);    // Prophet, LSTM 등
+  modelVersion   : String(20);
+  accuracy       : Decimal(5,2);  // MAPE 등
+  generatedAt    : Timestamp;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MenuItems (메뉴 관리 - 3계층 트리 구조)
+// ═══════════════════════════════════════════════════════════════════════
+entity MenuItems : cuid, managed {
+  code        : String(30) @mandatory @assert.unique;
+  title       : String(200) @mandatory;
+  icon        : String(50);              // 이모지 또는 SAP Icon
+  level       : Integer default 1;       // 1=대메뉴, 2=중메뉴, 3=소메뉴
+  url         : String(500);             // 이동할 URL (소메뉴만)
+  parent      : Association to MenuItems;
+  children    : Composition of many MenuItems on children.parent = $self;
+  sortOrder   : Integer default 0;
+  isActive    : Boolean default true;
+  description : String(500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// OrderRecommendation (발주 추천 - ML 예측 기반)
+// ═══════════════════════════════════════════════════════════════════════
+entity OrderRecommendations : cuid, managed {
+  store           : Association to Stores;
+  product         : Association to Products;
+  supplier        : Association to Suppliers;
+  recommendDate   : Date;
+  recommendedQty  : Integer default 0;
+  currentStock    : Integer default 0;
+  forecastDemand  : Decimal(10,1) default 0;   // 예측 수요 (7일)
+  safetyStock     : Integer default 0;
+  leadTime        : Integer default 0;
+  estimatedCost   : Decimal(15,2) default 0;
+  priority        : String(10);                // HIGH / MEDIUM / LOW
+  status          : String(20) default 'Pending'; // Pending / Accepted / Rejected / Ordered
+  note            : String(500);
 }

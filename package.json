@@ -6,6 +6,7 @@
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {
+    "@cap-js/hana": "^1",
     "@cap-js/sqlite": "^1",
     "@sap/cds": "^8",
     "@sap/xssec": "^4.13.0",
@@ -29,20 +30,36 @@
     "watch-suppliers": "cds watch --open suppliers/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-materials": "cds watch --open materials/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-storeproducts": "cds watch --open storeproducts/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-supplyorders": "cds watch --open supplyorders/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-supplyorders": "cds watch --open supplyorders/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-customers": "cds watch --open customers/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-customerpurchases": "cds watch --open customerpurchases/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-dailysales": "cds watch --open dailysales/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-inventorysnapshots": "cds watch --open inventorysnapshots/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-demandforecasts": "cds watch --open demandforecasts/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-orderrecommendations": "cds watch --open orderrecommendations/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-menus": "cds watch --open menus/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "cds": {
     "requires": {
       "db": {
-        "kind": "sqlite",
-        "credentials": {
-          "url": ":memory:",
-          "database": ":memory:"
+        "kind": "sql"
+      }
+    },
+    "[development]": {
+      "requires": {
+        "db": {
+          "kind": "sqlite",
+          "credentials": {
+            "url": ":memory:"
+          }
         }
       }
     },
     "[production]": {
       "requires": {
+        "db": {
+          "kind": "hana"
+        },
         "auth": {
           "kind": "dummy"
         }
@@ -61,6 +78,13 @@
     "app/suppliers",
     "app/materials",
     "app/storeproducts",
-    "app/supplyorders"
+    "app/supplyorders",
+    "app/customers",
+    "app/customerpurchases",
+    "app/dailysales",
+    "app/inventorysnapshots",
+    "app/demandforecasts",
+    "app/orderrecommendations",
+    "app/menus"
   ]
 }

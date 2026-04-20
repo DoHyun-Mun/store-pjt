@@ -4,198 +4,556 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>점포 상품별 재고 발주 관리 시스템</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <style>
+        :root {
+            --shell-bg: #FFFFFF;
+            --shell-text: #1D2D3E;
+            --shell-border: #E8E8E8;
+            --primary: #0070F2;
+            --primary-hover: #0058C6;
+            --primary-light: #EBF3FE;
+            --bg: #F5F6FA;
+            --card-bg: #FFFFFF;
+            --text: #1D2D3E;
+            --text-secondary: #556B82;
+            --text-tertiary: #8396A8;
+            --border: #E5E8ED;
+            --border-light: #EEF1F5;
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 56px;
+            --shell-height: 48px;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --shadow-sm: 0 1px 4px rgba(29,45,62,0.06);
+            --shadow-md: 0 4px 16px rgba(29,45,62,0.08);
+            --shadow-lg: 0 8px 32px rgba(29,45,62,0.1);
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #188038;
+            --success-light: #E6F4EA;
+            --warning: #E37400;
+            --warning-light: #FEF3E0;
+            --danger: #D93025;
+            --danger-light: #FCE8E6;
+            --info: #1A73E8;
+            --info-light: #E8F0FE;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: '72', 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            font-family: 'Inter', '72', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
+            overflow: hidden;
         }
-        .header {
-            text-align: center;
-            padding: 3rem 2rem 2rem;
-            color: white;
+
+        /* === Shell Bar === */
+        .shell-bar {
+            height: var(--shell-height); background: var(--shell-bg); color: var(--shell-text);
+            display: flex; align-items: center; padding: 0 1.25rem;
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            border-bottom: 1px solid var(--shell-border); box-shadow: var(--shadow-sm);
         }
-        .header h1 {
-            font-size: 2.2rem;
-            font-weight: 300;
-            margin-bottom: 0.5rem;
+        .shell-bar .menu-toggle {
+            background: none; border: none; color: var(--text-secondary);
+            cursor: pointer; padding: 0.4rem; border-radius: var(--radius-sm);
+            margin-right: 0.75rem; transition: all var(--transition);
+            display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
         }
-        .header p {
-            font-size: 1rem;
-            opacity: 0.85;
+        .shell-bar .menu-toggle:hover { background: var(--primary-light); color: var(--primary); }
+        .shell-bar .logo {
+            display: flex; align-items: center; gap: 0.65rem;
+            font-size: 0.9rem; font-weight: 600; color: var(--text);
+            text-decoration: none; cursor: pointer; margin-right: 1.5rem;
         }
-        .section-title {
-            color: rgba(255,255,255,0.9);
-            font-size: 1.1rem;
-            font-weight: 600;
-            text-align: left;
-            max-width: 1200px;
-            width: 100%;
-            padding: 0.5rem 2rem;
-            margin-top: 0.5rem;
+        .shell-bar .logo-mark { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+        .shell-bar .logo-mark svg { width: 28px; height: 28px; }
+        .shell-bar .logo-title { display: flex; flex-direction: column; line-height: 1.15; }
+        .shell-bar .logo-title .title-main { font-size: 0.88rem; font-weight: 700; letter-spacing: -0.01em; }
+        .shell-bar .logo-title .title-sub { font-size: 0.6rem; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.02em; }
+        .shell-bar .spacer { flex: 1; }
+        .shell-bar .shell-actions { display: flex; align-items: center; gap: 0.25rem; }
+        .shell-bar .shell-actions a {
+            color: var(--text-secondary); text-decoration: none; font-size: 0.78rem;
+            padding: 0.35rem 0.7rem; border-radius: var(--radius-sm);
+            transition: all var(--transition); font-weight: 500;
         }
-        .section-title span {
-            background: rgba(255,255,255,0.15);
-            padding: 0.3rem 0.8rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
+        .shell-bar .shell-actions a:hover { background: var(--primary-light); color: var(--primary); }
+        .shell-bar .user-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, #0070F2, #6B4FBB);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 600; margin-left: 0.75rem; color: white;
         }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
-            max-width: 1200px;
-            width: 100%;
-            padding: 0.5rem 2rem 1.5rem;
+
+        /* === Top Menu === */
+        .top-menu-group { display: flex; align-items: center; gap: 0.15rem; height: 100%; margin-left: 0.5rem; }
+        .top-menu-item {
+            display: flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem;
+            color: var(--text-secondary); font-size: 0.8rem; font-weight: 500;
+            cursor: pointer; border: none; background: none; border-radius: var(--radius-sm);
+            transition: all var(--transition); white-space: nowrap; height: 32px;
         }
-        @media (max-width: 900px) {
-            .grid { grid-template-columns: repeat(2, 1fr); }
+        .top-menu-item:hover { color: var(--primary); background: var(--primary-light); }
+        .top-menu-item.active { color: var(--primary); background: var(--primary-light); font-weight: 600; }
+
+        /* === Sidebar === */
+        .sidebar {
+            position: fixed; top: var(--shell-height); left: 0; bottom: 0;
+            width: var(--sidebar-width); background: var(--card-bg);
+            border-right: 1px solid var(--border); overflow-y: auto; z-index: 90;
+            transition: width 0.3s cubic-bezier(0.4,0,0.2,1), transform 0.3s cubic-bezier(0.4,0,0.2,1);
         }
-        @media (max-width: 600px) {
-            .grid { grid-template-columns: 1fr; }
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .sidebar.collapsed { width: var(--sidebar-collapsed); }
+        .sidebar.collapsed .nav-text, .sidebar.collapsed .nav-group-title { display: none; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 0.65rem; }
+        .nav-group-title {
+            font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+            color: var(--text-tertiary); padding: 1.25rem 1.1rem 0.4rem; letter-spacing: 0.08em;
+            display: flex; align-items: center; gap: 0.4rem;
         }
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.8rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
-            display: block;
+        .nav-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.55rem 1.1rem 0.55rem 1.8rem; color: var(--text-secondary);
+            text-decoration: none; font-size: 0.82rem; font-weight: 500;
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin-right: 0.5rem;
+            transition: all var(--transition); cursor: pointer;
         }
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        .nav-item:hover { background: var(--primary-light); color: var(--primary); }
+        .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+        .nav-item .nav-icon { font-size: 1rem; width: 22px; text-align: center; }
+
+        /* === Main === */
+        .main {
+            margin-left: var(--sidebar-width); margin-top: var(--shell-height);
+            padding: 0; transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
+            min-height: calc(100vh - var(--shell-height)); display: flex; flex-direction: column;
         }
-        .card-icon {
-            width: 52px;
-            height: 52px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.6rem;
-            margin-bottom: 1rem;
+        .main.expanded { margin-left: var(--sidebar-collapsed); }
+
+        /* === Dashboard === */
+        .dashboard-view { padding: 1rem 1.5rem 1.5rem; overflow-y: auto; height: calc(100vh - var(--shell-height)); }
+        .dash-header { margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; }
+        .dash-header h2 { font-size: 1.1rem; font-weight: 700; }
+        .dash-header .dash-date { font-size: 0.78rem; color: var(--text-tertiary); }
+
+        /* KPI Row */
+        .kpi-row {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.6rem; margin-bottom: 1rem;
         }
-        .card-icon.blue   { background: #e3f2fd; color: #1565c0; }
-        .card-icon.green  { background: #e8f5e9; color: #2e7d32; }
-        .card-icon.orange { background: #fff3e0; color: #e65100; }
-        .card-icon.purple { background: #f3e5f5; color: #6a1b9a; }
-        .card-icon.teal   { background: #e0f2f1; color: #00695c; }
-        .card-icon.red    { background: #fce4ec; color: #c62828; }
-        .card-icon.amber  { background: #fff8e1; color: #f57f17; }
-        .card-icon.indigo { background: #e8eaf6; color: #283593; }
-        .card-icon.brown  { background: #efebe9; color: #4e342e; }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 0.4rem;
-            color: #1a1a1a;
+        .kpi-card {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md);
+            padding: 1rem 1.15rem; display: flex; align-items: center; gap: 0.85rem;
+            box-shadow: var(--shadow-sm); transition: all var(--transition); position: relative; overflow: hidden;
         }
-        .card p {
-            font-size: 0.85rem;
-            color: #666;
-            line-height: 1.5;
+        .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+        .kpi-card .kpi-icon-wrap {
+            width: 42px; height: 42px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;
         }
-        .footer {
-            text-align: center;
-            padding: 2rem;
-            color: rgba(255,255,255,0.7);
-            font-size: 0.85rem;
+        .kpi-card .kpi-body { display: flex; flex-direction: column; }
+        .kpi-card .kpi-value { font-size: 1.35rem; font-weight: 700; line-height: 1.2; }
+        .kpi-card .kpi-label { font-size: 0.7rem; font-weight: 500; color: var(--text-tertiary); margin-top: 0.1rem; }
+
+        /* Chart Cards Row */
+        .chart-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+        .chart-card {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md);
+            padding: 0.75rem 1rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
         }
-        .service-link {
-            margin-top: 1rem;
-            display: inline-block;
-            background: rgba(255,255,255,0.15);
-            color: white;
-            padding: 0.5rem 1.2rem;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: background 0.2s;
+        .chart-card .chart-title {
+            font-size: 0.78rem; font-weight: 600; color: var(--text); margin-bottom: 0.4rem;
+            display: flex; align-items: center; gap: 0.4rem;
         }
-        .service-link:hover {
-            background: rgba(255,255,255,0.25);
+        .chart-card .chart-title .ct-icon { font-size: 1rem; }
+        .chart-card .chart-wrap { flex: 1; position: relative; min-height: 120px; max-height: 150px; }
+        .chart-card canvas { width: 100% !important; }
+
+        /* Shortcut Row */
+        .shortcut-section { margin-bottom: 1rem; }
+        .shortcut-section h3 { font-size: 0.88rem; font-weight: 600; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.35rem; }
+        .shortcut-row {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.6rem;
+        }
+        .shortcut-card {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 0.7rem 0.9rem; display: flex; align-items: center; gap: 0.55rem;
+            cursor: pointer; transition: all var(--transition); color: var(--text);
+            font-size: 0.8rem; font-weight: 500; text-decoration: none;
+        }
+        .shortcut-card:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+
+        /* Iframe */
+        .content-frame { flex: 1; width: 100%; border: none; min-height: calc(100vh - var(--shell-height)); }
+        .content-frame-wrap { position: relative; flex: 1; display: none; min-height: calc(100vh - var(--shell-height)); }
+        .content-frame-wrap iframe { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; }
+        .frame-loader { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); z-index: 5; transition: opacity 0.3s; }
+        .frame-loader.hidden { opacity: 0; pointer-events: none; }
+        .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-text { margin-top: 12px; font-size: 0.85rem; color: var(--text-tertiary); }
+
+        /* Responsive */
+        @media (max-width: 1024px) { .chart-row { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); width: var(--sidebar-width); }
+            .sidebar.mobile-open { transform: translateX(0); box-shadow: var(--shadow-lg); }
+            .main { margin-left: 0 !important; }
+            .chart-row { grid-template-columns: 1fr; }
+            .top-menu-group { overflow-x: auto; }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>📦 점포 상품별 재고 발주 관리 시스템</h1>
-        <p>Store Inventory & Supply Chain Management — SAP CAP + Fiori Elements</p>
-    </div>
 
-    <!-- 마스터 데이터 -->
-    <div class="section-title"><span>📋 마스터 데이터</span></div>
-    <div class="grid">
-        <a href="/categories/webapp/index.html" class="card">
-            <div class="card-icon blue">📂</div>
-            <h2>분류 관리</h2>
-            <p>상품 분류(카테고리)를 등록하고 관리합니다. 분류별 소속 상품을 확인할 수 있습니다.</p>
-        </a>
-
-        <a href="/products/webapp/index.html" class="card">
-            <div class="card-icon green">🏷️</div>
-            <h2>상품 관리</h2>
-            <p>상품 마스터 정보를 관리합니다. BOM(소요 자재), 점포별 상품 현황을 확인할 수 있습니다.</p>
-        </a>
-
-        <a href="/stores/webapp/index.html" class="card">
-            <div class="card-icon teal">🏪</div>
-            <h2>점포 관리</h2>
-            <p>점포 마스터 정보를 관리합니다. 점포별 취급 상품, 재고, 공급 주문을 확인할 수 있습니다.</p>
-        </a>
-
-        <a href="/suppliers/webapp/index.html" class="card">
-            <div class="card-icon red">🤝</div>
-            <h2>공급업체 관리</h2>
-            <p>공급업체 정보를 관리합니다. 공급 자재 목록과 주문 내역을 확인할 수 있습니다.</p>
-        </a>
-
-        <a href="/materials/webapp/index.html" class="card">
-            <div class="card-icon amber">⚙️</div>
-            <h2>자재 관리</h2>
-            <p>자재(원자재/부자재/포장재) 마스터를 관리합니다. 재고 현황과 BOM 연결을 확인합니다.</p>
-        </a>
-
-        <a href="/storeproducts/webapp/index.html" class="card">
-            <div class="card-icon indigo">🏬</div>
-            <h2>점포 상품 관리</h2>
-            <p>점포별 상품 판매가/원가/재고 한도를 설정합니다. 점포-상품 매핑을 관리합니다.</p>
+<header class="shell-bar">
+    <button class="menu-toggle" onclick="toggleSidebar()" title="메뉴 토글">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <rect y="2" width="16" height="1.5" rx="0.75"/><rect y="7.25" width="16" height="1.5" rx="0.75"/><rect y="12.5" width="16" height="1.5" rx="0.75"/>
+        </svg>
+    </button>
+    <a class="logo" onclick="showDashboard()">
+        <div class="logo-mark">
+            <svg viewBox="0 0 32 32" fill="none"><rect x="2" y="6" width="12" height="12" rx="3" fill="#0070F2"/><rect x="18" y="6" width="12" height="12" rx="3" fill="#0070F2" opacity="0.6"/><rect x="2" y="22" width="12" height="4" rx="2" fill="#0070F2" opacity="0.35"/><rect x="18" y="22" width="12" height="4" rx="2" fill="#0070F2" opacity="0.35"/></svg>
+        </div>
+        <div class="logo-title">
+            <span class="title-main">점포별 상품 재고 발주 관리</span>
+            <span class="title-sub">Inventory &amp; Order Management</span>
+        </div>
+    </a>
+    <div class="top-menu-group" id="topMenuBar"><span style="color:var(--text-tertiary);font-size:0.78rem;">로딩중...</span></div>
+    <div class="spacer"></div>
+    <div class="shell-actions">
+        <a href="/inventory/$metadata" title="OData Metadata">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:-2px;margin-right:3px;"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>API
         </a>
     </div>
+    <div class="user-avatar" title="사용자">U</div>
+</header>
 
-    <!-- 운영 관리 -->
-    <div class="section-title"><span>🔄 운영 관리</span></div>
-    <div class="grid">
-        <a href="/inventories/webapp/index.html" class="card">
-            <div class="card-icon orange">📊</div>
-            <h2>재고 관리</h2>
-            <p>점포/창고별 재고 현황을 실시간 조회합니다. 안전 재고 미만 시 경고가 표시됩니다.</p>
-        </a>
+<nav class="sidebar" id="sidebar">
+    <div style="padding:1.5rem 1.1rem;color:var(--text-tertiary);font-size:0.8rem;text-align:center;">로딩중...</div>
+</nav>
 
-        <a href="/purchaseorders/webapp/index.html" class="card">
-            <div class="card-icon purple">📋</div>
-            <h2>발주 관리</h2>
-            <p>발주를 생성하고 승인 워크플로우를 진행합니다. 입고 처리 시 재고가 자동 반영됩니다.</p>
-        </a>
+<main class="main" id="main">
+    <!-- Dashboard -->
+    <div class="dashboard-view" id="welcomeView">
+        <div class="dash-header">
+            <h2>📊 대시보드</h2>
+            <span class="dash-date" id="dashDate"></span>
+        </div>
 
-        <a href="/supplyorders/webapp/index.html" class="card">
-            <div class="card-icon brown">🚚</div>
-            <h2>공급 주문 관리</h2>
-            <p>공급/반품/점포간 이동 주문을 관리합니다. 배송 완료 시 재고가 자동 반영됩니다.</p>
-        </a>
+        <!-- KPI Cards -->
+        <div class="kpi-row" id="kpiRow">
+            <div class="kpi-card"><div class="kpi-icon-wrap" style="background:var(--info-light);color:var(--info)">🏷️</div><div class="kpi-body"><span class="kpi-value" id="kpi-products">-</span><span class="kpi-label">상품</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon-wrap" style="background:var(--success-light);color:var(--success)">🏪</div><div class="kpi-body"><span class="kpi-value" id="kpi-stores">-</span><span class="kpi-label">점포</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon-wrap" style="background:var(--warning-light);color:var(--warning)">📦</div><div class="kpi-body"><span class="kpi-value" id="kpi-inventories">-</span><span class="kpi-label">재고 항목</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon-wrap" style="background:var(--danger-light);color:var(--danger)">📋</div><div class="kpi-body"><span class="kpi-value" id="kpi-purchaseorders">-</span><span class="kpi-label">발주</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon-wrap" style="background:#F3E8FD;color:#7B2FF2">🤝</div><div class="kpi-body"><span class="kpi-value" id="kpi-suppliers">-</span><span class="kpi-label">공급업체</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon-wrap" style="background:#E0F7FA;color:#00838F">👤</div><div class="kpi-body"><span class="kpi-value" id="kpi-customers">-</span><span class="kpi-label">고객</span></div></div>
+        </div>
+
+        <!-- Chart Cards -->
+        <div class="chart-row">
+            <div class="chart-card">
+                <div class="chart-title"><span class="ct-icon">📈</span> 일별 매출 추이</div>
+                <div class="chart-wrap"><canvas id="chartSales"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title"><span class="ct-icon">📦</span> 재고 추이</div>
+                <div class="chart-wrap"><canvas id="chartInventory"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title"><span class="ct-icon">📋</span> 발주 승인 현황</div>
+                <div class="chart-wrap"><canvas id="chartOrders"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Shortcuts -->
+        <div class="shortcut-section">
+            <h3>⚡ 바로가기</h3>
+            <div class="shortcut-row" id="shortcutGrid"></div>
+        </div>
     </div>
 
-    <div class="footer">
-        <p>SAP Cloud Application Programming Model (CAP) + SAP Fiori Elements</p>
-        <a href="/inventory/$metadata" class="service-link">📡 OData V4 Service Metadata</a>
+    <div class="content-frame-wrap" id="contentFrameWrap">
+        <div id="frameLoader" class="frame-loader hidden">
+            <div style="text-align:center"><div class="spinner"></div><div class="loader-text">앱 로딩 중...</div></div>
+        </div>
+        <iframe id="contentFrame"></iframe>
     </div>
+</main>
+
+<script>
+let menuTree = [];
+let activeTopMenuId = null;
+let salesChart, inventoryChart, ordersChart;
+
+// Date display
+document.getElementById('dashDate').textContent = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+
+async function loadMenuData() {
+    try {
+        const res = await fetch('/inventory/MenuItems?$filter=isActive eq true&$orderby=sortOrder asc&$select=ID,code,title,icon,level,url,parent_ID,sortOrder');
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        const items = data.value || [];
+        const map = {};
+        items.forEach(i => { map[i.ID] = { ...i, children: [] }; });
+        const roots = [];
+        items.forEach(i => {
+            if (i.parent_ID && map[i.parent_ID]) map[i.parent_ID].children.push(map[i.ID]);
+            else if (!i.parent_ID) roots.push(map[i.ID]);
+        });
+        menuTree = roots;
+        renderTopMenu();
+        if (menuTree.length > 0) selectTopMenu(menuTree[0].ID);
+    } catch (e) {
+        console.error('메뉴 로드 실패:', e);
+        document.getElementById('topMenuBar').innerHTML = '<span style="color:var(--text-tertiary);font-size:0.78rem;">메뉴 로드 실패</span>';
+    }
+}
+
+function renderTopMenu() {
+    const bar = document.getElementById('topMenuBar');
+    bar.innerHTML = menuTree.map(i =>
+        `<button class="top-menu-item" data-id="${i.ID}" onclick="selectTopMenu('${i.ID}')">${i.icon||'📁'} ${i.title}</button>`
+    ).join('');
+}
+
+function showDashboard() {
+    document.getElementById('welcomeView').style.display = '';
+    document.getElementById('contentFrameWrap').style.display = 'none';
+    document.getElementById('contentFrame').src = '';
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.top-menu-item').forEach(i => i.classList.remove('active'));
+    loadDashboardData();
+}
+
+async function loadDashboardData() {
+    // KPI counts
+    const kpis = [
+        { id: 'kpi-products', entity: 'Products' },
+        { id: 'kpi-stores', entity: 'Stores' },
+        { id: 'kpi-inventories', entity: 'Inventories' },
+        { id: 'kpi-purchaseorders', entity: 'PurchaseOrders' },
+        { id: 'kpi-suppliers', entity: 'Suppliers' },
+        { id: 'kpi-customers', entity: 'Customers' }
+    ];
+    for (const kp of kpis) {
+        try {
+            const r = await fetch(`/inventory/${kp.entity}/$count`);
+            if (r.ok) { const c = await r.text(); document.getElementById(kp.id).textContent = Number(c).toLocaleString(); }
+        } catch(e) {}
+    }
+
+    // Charts
+    await loadSalesChart();
+    await loadInventoryChart();
+    await loadOrdersChart();
+
+    // Shortcuts
+    renderShortcuts();
+}
+
+async function loadSalesChart() {
+    try {
+        const res = await fetch('/inventory/DailySales?$orderby=salesDate asc&$select=salesDate,revenue');
+        if (!res.ok) return;
+        const data = await res.json();
+        const items = data.value || [];
+        // Aggregate by date
+        const dateMap = {};
+        items.forEach(i => {
+            const d = i.salesDate;
+            dateMap[d] = (dateMap[d] || 0) + parseFloat(i.revenue);
+        });
+        const dates = Object.keys(dateMap).sort();
+        const values = dates.map(d => dateMap[d]);
+        const labels = dates.map(d => { const p = d.split('-'); return `${p[1]}/${p[2]}`; });
+
+        if (salesChart) salesChart.destroy();
+        salesChart = new Chart(document.getElementById('chartSales'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: '매출액',
+                    data: values,
+                    borderColor: '#0070F2',
+                    backgroundColor: 'rgba(0,112,242,0.08)',
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#0070F2',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => `₩${ctx.raw.toLocaleString()}` } }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: v => `₩${(v/10000).toFixed(0)}만` }, grid: { color: '#F0F0F0' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    } catch(e) { console.warn('매출 차트 실패:', e); }
+}
+
+async function loadInventoryChart() {
+    try {
+        const res = await fetch('/inventory/InventorySnapshots?$orderby=snapshotDate asc&$select=snapshotDate,quantity,availableQty');
+        if (!res.ok) return;
+        const data = await res.json();
+        const items = data.value || [];
+        // Aggregate by date
+        const dateMap = {};
+        items.forEach(i => {
+            const d = i.snapshotDate;
+            if (!dateMap[d]) dateMap[d] = { total: 0, available: 0 };
+            dateMap[d].total += parseFloat(i.quantity);
+            dateMap[d].available += parseFloat(i.availableQty);
+        });
+        const dates = Object.keys(dateMap).sort();
+        const totals = dates.map(d => dateMap[d].total);
+        const avails = dates.map(d => dateMap[d].available);
+        const labels = dates.map(d => { const p = d.split('-'); return `${p[1]}/${p[2]}`; });
+
+        if (inventoryChart) inventoryChart.destroy();
+        inventoryChart = new Chart(document.getElementById('chartInventory'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: '총 재고', data: totals, borderColor: '#188038', backgroundColor: 'rgba(24,128,56,0.08)', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#188038', tension: 0.3, fill: true },
+                    { label: '가용 재고', data: avails, borderColor: '#E37400', backgroundColor: 'rgba(227,116,0,0.06)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#E37400', tension: 0.3, fill: true, borderDash: [5,3] }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#F0F0F0' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    } catch(e) { console.warn('재고 차트 실패:', e); }
+}
+
+async function loadOrdersChart() {
+    try {
+        const res = await fetch('/inventory/PurchaseOrders?$select=status');
+        if (!res.ok) return;
+        const data = await res.json();
+        const items = data.value || [];
+        const statusMap = {};
+        items.forEach(i => { statusMap[i.status] = (statusMap[i.status] || 0) + 1; });
+
+        const statusLabels = { Draft: '초안', Submitted: '제출됨', Approved: '승인', Rejected: '반려', Received: '입고완료' };
+        const statusColors = { Draft: '#8396A8', Submitted: '#1A73E8', Approved: '#188038', Rejected: '#D93025', Received: '#7B2FF2' };
+
+        const labels = Object.keys(statusMap).map(s => statusLabels[s] || s);
+        const values = Object.values(statusMap);
+        const colors = Object.keys(statusMap).map(s => statusColors[s] || '#999');
+
+        if (ordersChart) ordersChart.destroy();
+        ordersChart = new Chart(document.getElementById('chartOrders'), {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+                    tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw}건 (${((ctx.raw/items.length)*100).toFixed(1)}%)` } }
+                },
+                cutout: '60%'
+            }
+        });
+    } catch(e) { console.warn('발주 차트 실패:', e); }
+}
+
+function renderShortcuts() {
+    const grid = document.getElementById('shortcutGrid');
+    if (!grid) return;
+    const sc = [
+        { icon: '🏷️', title: '상품 관리', url: '/products/webapp/index.html' },
+        { icon: '🏪', title: '점포 관리', url: '/stores/webapp/index.html' },
+        { icon: '📊', title: '재고 관리', url: '/inventories/webapp/index.html' },
+        { icon: '📋', title: '발주 관리', url: '/purchaseorders/webapp/index.html' },
+        { icon: '🚚', title: '공급 주문', url: '/supplyorders/webapp/index.html' },
+        { icon: '👤', title: '고객 관리', url: '/customers/webapp/index.html' },
+        { icon: '💰', title: '일별 매출', url: '/dailysales/webapp/index.html' },
+        { icon: '🔮', title: '수요 예측', url: '/demandforecasts/webapp/index.html' }
+    ];
+    grid.innerHTML = sc.map(s => `<a class="shortcut-card" onclick="showContentFrame('${s.url}')">${s.icon} ${s.title}</a>`).join('');
+}
+
+function selectTopMenu(id) {
+    activeTopMenuId = id;
+    document.querySelectorAll('.top-menu-item').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+    const top = menuTree.find(m => m.ID === id);
+    if (!top) return;
+    renderSidebar(top.children || []);
+    if ((!top.children || top.children.length === 0) && top.url) showContentFrame(top.url);
+}
+
+function renderSidebar(mids) {
+    const sb = document.getElementById('sidebar');
+    if (!mids || !mids.length) { sb.innerHTML = '<div style="padding:1.5rem 1.1rem;color:var(--text-tertiary);font-size:0.8rem;text-align:center;">하위 메뉴가 없습니다</div>'; return; }
+    let h = '';
+    mids.forEach(m => {
+        h += `<div class="nav-group-title"><span class="group-icon">${m.icon||'📁'}</span> ${m.title}</div>`;
+        if (m.children && m.children.length) {
+            m.children.forEach(s => {
+                h += `<a class="nav-item" data-id="${s.ID}" onclick="selectSubMenu('${s.ID}','${(s.url||'').replace(/'/g,"\\'")}')"><span class="nav-icon">${s.icon||'📄'}</span><span class="nav-text">${s.title}</span></a>`;
+            });
+        } else if (m.url) {
+            h += `<a class="nav-item" data-id="${m.ID}" onclick="selectSubMenu('${m.ID}','${(m.url||'').replace(/'/g,"\\'")}')"><span class="nav-icon">📄</span><span class="nav-text">${m.title} 열기</span></a>`;
+        }
+    });
+    sb.innerHTML = h;
+}
+
+function selectSubMenu(id, url) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.id === id));
+    if (url) showContentFrame(url);
+}
+
+function showContentFrame(url) {
+    document.getElementById('welcomeView').style.display = 'none';
+    const wrap = document.getElementById('contentFrameWrap');
+    const loader = document.getElementById('frameLoader');
+    const f = document.getElementById('contentFrame');
+    wrap.style.display = 'block';
+    loader.classList.remove('hidden');
+    f.src = url;
+    f.onload = () => { loader.classList.add('hidden'); };
+}
+
+function toggleSidebar() {
+    const sb = document.getElementById('sidebar'), mn = document.getElementById('main');
+    if (window.innerWidth <= 768) sb.classList.toggle('mobile-open');
+    else { sb.classList.toggle('collapsed'); mn.classList.toggle('expanded'); }
+}
+
+document.addEventListener('DOMContentLoaded', () => { loadMenuData(); loadDashboardData(); });
+</script>
 </body>
 </html>

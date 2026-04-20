@@ -1,12 +1,10 @@
 # ══════════════════════════════════════════════════════════════════════
 # Multi-stage Dockerfile for SAP CAP Inventory Management System
+# Production: HANA Cloud (HDI Container)
 # ══════════════════════════════════════════════════════════════════════
 
 # Stage 1: Build
 FROM node:22-alpine AS builder
-
-# Install build tools for native modules (better-sqlite3)
-RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
@@ -19,7 +17,7 @@ RUN npm ci
 # Copy application source
 COPY . .
 
-# Run cds build to compile models (generates gen/ folder with draft tables, CSV data, etc.)
+# Run cds build to compile models for HANA (generates gen/ folder)
 RUN npx cds build --production
 
 # Stage 2: Production
@@ -27,10 +25,7 @@ FROM node:22-alpine AS production
 
 # Add labels
 LABEL maintainer="SAP CAP Inventory System"
-LABEL description="상품 재고 관리 시스템 - SAP CAP + Fiori Elements"
-
-# Install build tools for native modules (better-sqlite3 needs them at runtime on Alpine)
-RUN apk add --no-cache python3 make g++
+LABEL description="상품 재고 관리 시스템 - SAP CAP + Fiori Elements + HANA Cloud"
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S appgroup && \
@@ -42,8 +37,7 @@ WORKDIR /app
 COPY --from=builder /app/package.json /app/package-lock.json ./
 
 # Install production dependencies only
-RUN npm ci --only=production && \
-    apk del python3 make g++
+RUN npm ci --only=production
 
 # Copy built artifacts from builder stage
 COPY --from=builder --chown=appuser:appgroup /app/gen ./gen
@@ -56,7 +50,7 @@ COPY --from=builder --chown=appuser:appgroup /app/server.js ./server.js
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=4004
-ENV CDS_ENV=development
+ENV CDS_ENV=production
 
 # Expose port
 EXPOSE 4004

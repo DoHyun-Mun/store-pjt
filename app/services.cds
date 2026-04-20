@@ -16,3 +16,17 @@ using from './materials/annotations';
 using from './storeproducts/annotations';
 
 using from './supplyorders/annotations';
+
+using from './customers/annotations';
+
+using from './customerpurchases/annotations';
+
+using from './dailysales/annotations';
+
+using from './inventorysnapshots/annotations';
+
+using from './demandforecasts/annotations';
+
+using from './orderrecommendations/annotations';
+
+using from './menus/annotations';

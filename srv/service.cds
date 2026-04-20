@@ -92,6 +92,53 @@ service InventoryService @(path: '/inventory') {
   entity SupplyOrderItems as projection on db.SupplyOrderItems;
 
   /**
+   * Customers - 고객 마스터
+   */
+  @odata.draft.enabled
+  entity Customers as projection on db.Customers;
+
+  /**
+   * CustomerPurchases - 고객 구매 이력
+   */
+  @odata.draft.enabled
+  entity CustomerPurchases as projection on db.CustomerPurchases;
+
+  /**
+   * CustomerPurchaseItems - 구매 상세 품목
+   */
+  entity CustomerPurchaseItems as projection on db.CustomerPurchaseItems;
+
+  /**
+   * DailySales - 일별 매출 집계 (ML 수요 예측 입력)
+   */
+  @odata.draft.enabled
+  entity DailySales as projection on db.DailySales;
+
+  /**
+   * InventorySnapshots - 재고 스냅샷 이력 (ML 재고 최적화 입력)
+   */
+  @odata.draft.enabled
+  entity InventorySnapshots as projection on db.InventorySnapshots;
+
+  /**
+   * DemandForecasts - 수요 예측 결과 (ML 출력)
+   */
+  @odata.draft.enabled
+  entity DemandForecasts as projection on db.DemandForecasts;
+
+  /**
+   * OrderRecommendations - 발주 추천 (ML 예측 기반)
+   */
+  @odata.draft.enabled
+  entity OrderRecommendations as projection on db.OrderRecommendations;
+
+  /**
+   * MenuItems - 메뉴 관리 (3계층 트리 구조)
+   */
+  @odata.draft.enabled
+  entity MenuItems as projection on db.MenuItems;
+
+  /**
    * Search 지원 필드 지정
    */
   annotate Products with {
@@ -129,5 +176,20 @@ service InventoryService @(path: '/inventory') {
 
   annotate SupplyOrders with {
     orderNumber @Search.defaultSearchElement;
+  };
+
+  annotate Customers with {
+    customerCode   @Search.defaultSearchElement;
+    name           @Search.defaultSearchElement;
+    city           @Search.defaultSearchElement;
+  };
+
+  annotate CustomerPurchases with {
+    purchaseNumber @Search.defaultSearchElement;
+  };
+
+  annotate MenuItems with {
+    code  @Search.defaultSearchElement;
+    title @Search.defaultSearchElement;
   };
 }

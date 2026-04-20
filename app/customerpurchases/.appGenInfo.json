@@ -1,0 +1,28 @@
+{
+  "generationParameters": {
+    "generationDate": "Mon Apr 20 2026 15:57:12 GMT+0900 (Korean Standard Time)",
+    "generatorPlatform": "CLI",
+    "serviceType": "Local CAP",
+    "metadataFilename": "",
+    "serviceUrl": "http://localhost:4004/odata/v4/inventory/",
+    "appName": "customerpurchases",
+    "appTitle": "고객 구매 이력",
+    "appDescription": "고객 구매 이력 관리 애플리케이션",
+    "appNamespace": "",
+    "ui5Theme": "sap_horizon",
+    "ui5Version": "1.136.7",
+    "enableEslint": true,
+    "enableTypeScript": false,
+    "showMockDataInfo": false,
+    "generatorVersion": "1.22.0",
+    "template": "List Report Page V4",
+    "generatorName": "SAP Fiori Application Generator",
+    "entityRelatedConfig": [
+      {
+        "type": "Main Entity",
+        "value": "CustomerPurchases"
+      }
+    ],
+    "launchText": "To launch the generated app, start your CAP project:  and navigate to the following location in your browser:\n\nhttp://localhost:4004/customerpurchases/webapp/index.html"
+  }
+}

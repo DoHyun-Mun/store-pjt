@@ -1,14 +1,17 @@
 {
   "requires": {
     "db": {
-      "kind": "sqlite",
-      "credentials": {
-        "url": ":memory:",
-        "database": ":memory:"
-      }
+      "kind": "sql"
     },
     "auth": {
       "kind": "dummy"
+    }
+  },
+  "[production]": {
+    "requires": {
+      "db": {
+        "kind": "hana"
+      }
     }
   },
   "hana": {
