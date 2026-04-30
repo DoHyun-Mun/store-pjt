@@ -1,14 +1,14 @@
 apiVersion: gateway.kyma-project.io/v2alpha1
 kind: APIRule
 metadata:
-  name: fiori-mcp-test
-  namespace: fiori-mcp-test
+  name: store-pjt
+  namespace: store-pjt
   labels:
-    app: fiori-mcp-test
+    app: store-pjt
 spec:
   gateway: kyma-system/kyma-gateway
   hosts:
-    - "fiori-mcp-test.c56380c.kyma.ondemand.com"
+    - "store-pjt.c56380c.kyma.ondemand.com"
   service:
     name: approuter
     port: 5000

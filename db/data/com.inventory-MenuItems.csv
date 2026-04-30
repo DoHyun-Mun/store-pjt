@@ -30,5 +30,8 @@ a0000001-0321-4000-8000-000000000321,DAILYSALES,일별 매출,💰,3,/dailysales
 a0000001-0411-4000-8000-000000000411,INVSNAPSHOTS,재고 스냅샷,📸,3,/inventorysnapshots/webapp/index.html,a0000001-0041-4000-8000-000000000041,1,true,일자별 재고 이력 및 추이 분석
 a0000001-0421-4000-8000-000000000421,DEMANDFORECASTS,수요 예측,🔮,3,/demandforecasts/webapp/index.html,a0000001-0042-4000-8000-000000000042,1,true,AI 기반 수요 예측 및 정확도 분석
 a0000001-0422-4000-8000-000000000422,ORDERREC,발주 추천,💡,3,/orderrecommendations/webapp/index.html,a0000001-0042-4000-8000-000000000042,2,true,수요 예측 기반 자동 발주 추천
+a0000001-0423-4000-8000-000000000423,CHURNPRED,고객 이탈 예측,⚠️,3,/churnpredictions/webapp/index.html,a0000001-0042-4000-8000-000000000042,3,true,ML 기반 고객 이탈 확률 예측
+a0000001-0424-4000-8000-000000000424,CUSTSEG,고객 세분화,🎯,3,/customersegments/webapp/index.html,a0000001-0042-4000-8000-000000000042,4,true,RFM/K-Means 기반 고객 세분화 결과
+a0000001-0425-4000-8000-000000000425,SALESANOM,매출 이상 탐지,🚨,3,/salesanomalies/webapp/index.html,a0000001-0042-4000-8000-000000000042,5,true,IsolationForest 기반 매출 이상 탐지
 a0000001-0511-4000-8000-000000000511,MENUS,메뉴 관리,🗂️,3,/menus/webapp/index.html,a0000001-0051-4000-8000-000000000051,1,true,메뉴 구조 관리
 a0000001-0521-4000-8000-000000000521,METADATA,OData Metadata,📡,3,/inventory/$metadata,a0000001-0052-4000-8000-000000000052,1,true,OData V4 메타데이터 조회

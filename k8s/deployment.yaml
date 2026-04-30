@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fiori-mcp-test
-  namespace: fiori-mcp-test
+  name: store-pjt
+  namespace: store-pjt
   labels:
-    app: fiori-mcp-test
+    app: store-pjt
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: fiori-mcp-test
+      app: store-pjt
   template:
     metadata:
       annotations:
         sidecar.istio.io/inject: "true"
       labels:
-        app: fiori-mcp-test
+        app: store-pjt
     spec:
       imagePullSecrets:
         - name: ghcr-secret
       containers:
-        - name: fiori-mcp-test
-          image: "ghcr.io/dohyun-mun/fiori-mcp-test:latest"
+        - name: store-pjt
+          image: "ghcr.io/dohyun-mun/store-pjt:v9-fixes"
           imagePullPolicy: Always
           ports:
             - containerPort: 4004
@@ -32,6 +32,26 @@ spec:
               value: "production"
             - name: SERVICE_BINDING_ROOT
               value: "/bindings"
+            - name: AICORE_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aicore-secret
+                  key: AICORE_SERVICE_KEY
+            - name: AICORE_RESOURCE_GROUP
+              valueFrom:
+                secretKeyRef:
+                  name: aicore-secret
+                  key: AICORE_RESOURCE_GROUP
+            - name: AICORE_DEPLOYMENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aicore-secret
+                  key: AICORE_DEPLOYMENT_ID
+            - name: MCP_SERVER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: aicore-secret
+                  key: MCP_SERVER_URL
           volumeMounts:
             - name: hana-hdi-secret-vol
               mountPath: /bindings/hana-hdi

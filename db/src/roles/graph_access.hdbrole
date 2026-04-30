@@ -1,0 +1,122 @@
+{
+  "role": {
+    "name": "graph_access",
+    "schema_privileges": [
+      {
+        "privileges": ["SELECT"]
+      }
+    ],
+    "object_privileges": [
+      {
+        "name": "COM_INVENTORY_CATEGORIES",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_SUPPLIERS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_MATERIALS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_PRODUCTS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_PRODUCTMATERIALS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_STORES",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_STOREPRODUCTS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_INVENTORIES",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_PURCHASEORDERS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_SUPPLYORDERS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_SUPPLYORDERITEMS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_CUSTOMERS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_CUSTOMERPURCHASES",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_CUSTOMERPURCHASEITEMS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_DAILYSALES",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_INVENTORYSNAPSHOTS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_DEMANDFORECASTS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_MENUITEMS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_ORDERRECOMMENDATIONS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_CHURNPREDICTIONS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_CUSTOMERSEGMENTS",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      },
+      {
+        "name": "COM_INVENTORY_SALESANOMALIES",
+        "type": "TABLE",
+        "privileges": ["SELECT"]
+      }
+    ]
+  }
+}

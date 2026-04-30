@@ -8,6 +8,7 @@
   "dependencies": {
     "@cap-js/hana": "^1",
     "@cap-js/sqlite": "^1",
+    "@sap-ai-sdk/orchestration": "^2.10.0",
     "@sap/cds": "^8",
     "@sap/xssec": "^4.13.0",
     "express": "^4"
@@ -37,7 +38,10 @@
     "watch-inventorysnapshots": "cds watch --open inventorysnapshots/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-demandforecasts": "cds watch --open demandforecasts/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-orderrecommendations": "cds watch --open orderrecommendations/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-menus": "cds watch --open menus/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-menus": "cds watch --open menus/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-churnpredictions": "cds watch --open churnpredictions/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-customersegments": "cds watch --open customersegments/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-salesanomalies": "cds watch --open salesanomalies/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "cds": {
     "requires": {
@@ -85,6 +89,9 @@
     "app/inventorysnapshots",
     "app/demandforecasts",
     "app/orderrecommendations",
-    "app/menus"
+    "app/menus",
+    "app/churnpredictions",
+    "app/customersegments",
+    "app/salesanomalies"
   ]
 }

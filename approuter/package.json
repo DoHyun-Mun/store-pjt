@@ -1,11 +1,9 @@
 {
-  "name": "fiori-mcp-test-approuter",
-  "version": "1.0.0",
-  "description": "Application Router for IAS OIDC Authentication",
-  "dependencies": {
-    "@sap/approuter": "^16"
-  },
+  "name": "store-pjt-approuter",
   "scripts": {
     "start": "node node_modules/@sap/approuter/approuter.js"
+  },
+  "dependencies": {
+    "@sap/approuter": "^16"
   }
 }

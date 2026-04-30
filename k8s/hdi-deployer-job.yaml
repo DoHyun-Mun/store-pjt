@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: hdi-deployer
-  namespace: fiori-mcp-test
+  namespace: store-pjt
   labels:
     app: hdi-deployer
 spec:
@@ -20,17 +20,22 @@ spec:
         - name: ghcr-secret
       containers:
         - name: hdi-deployer
-          image: "ghcr.io/dohyun-mun/fiori-mcp-test-hdi-deployer:latest"
+          image: "ghcr.io/dohyun-mun/store-pjt-hdi-deployer:latest"
           imagePullPolicy: Always
           env:
             - name: NODE_ENV
               value: "production"
+            - name: TARGET_CONTAINER
+              value: "hana-hdi"
           volumeMounts:
             - name: hana-hdi-secret-vol
               mountPath: /bindings/hana-hdi
               readOnly: true
             - name: service-binding-root
               mountPath: /etc/secrets/sapcp/hana/hana-hdi
+              readOnly: true
+            - name: graph-grantor-vol
+              mountPath: /bindings/graph-grantor
               readOnly: true
           resources:
             requests:
@@ -46,3 +51,6 @@ spec:
         - name: service-binding-root
           secret:
             secretName: hana-hdi-secret
+        - name: graph-grantor-vol
+          secret:
+            secretName: graph-grantor

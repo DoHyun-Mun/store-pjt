@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: approuter
-  namespace: fiori-mcp-test
+  namespace: store-pjt
   labels:
     app: approuter
 spec:
@@ -21,26 +21,17 @@ spec:
         - name: ghcr-secret
       containers:
         - name: approuter
-          image: "ghcr.io/dohyun-mun/fiori-mcp-test-approuter:latest"
+          image: "ghcr.io/dohyun-mun/store-pjt-approuter:latest"
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:
+            - name: PORT
+              value: "5000"
             - name: destinations
-              value: '[{"name":"cap-backend","url":"http://fiori-mcp-test:4004","forwardAuthToken":true}]'
+              value: '[{"name":"cap-backend","url":"http://store-pjt:4004","forwardAuthToken":true}]'
             - name: EXTERNAL_REVERSE_PROXY
               value: "true"
-            - name: XS_APP_LOG_LEVEL
-              value: "debug"
-          volumeMounts:
-            - name: default-services
-              mountPath: "/app/default-services.json"
-              subPath: "default-services.json"
-              readOnly: true
-            - name: xs-app-config
-              mountPath: "/app/xs-app.json"
-              subPath: "xs-app.json"
-              readOnly: true
           resources:
             requests:
               memory: "128Mi"
@@ -48,10 +39,3 @@ spec:
             limits:
               memory: "256Mi"
               cpu: "200m"
-      volumes:
-        - name: default-services
-          secret:
-            secretName: uaa-default-services
-        - name: xs-app-config
-          configMap:
-            name: approuter-xs-app

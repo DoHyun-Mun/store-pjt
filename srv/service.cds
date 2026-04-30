@@ -24,6 +24,11 @@ service InventoryService @(path: '/inventory') {
   @odata.draft.enabled
   entity Inventories as projection on db.Inventories;
 
+  annotate Inventories with {
+    availableQty @readonly;
+  };
+
+
   /**
    * Stores - 점포 마스터
    */
@@ -138,6 +143,28 @@ service InventoryService @(path: '/inventory') {
   @odata.draft.enabled
   entity MenuItems as projection on db.MenuItems;
 
+  // ════════════════════════════════════════════════════════════════════
+  // 예측 분석 결과 엔티티 (Python ML 서버 → OData API → HANA)
+  // ════════════════════════════════════════════════════════════════════
+
+  /**
+   * ChurnPredictions - 고객 이탈 예측 결과 (Python ML 출력)
+   */
+  @odata.draft.enabled
+  entity ChurnPredictions as projection on db.ChurnPredictions;
+
+  /**
+   * CustomerSegments - 고객 세분화 결과 (Python ML 출력)
+   */
+  @odata.draft.enabled
+  entity CustomerSegments as projection on db.CustomerSegments;
+
+  /**
+   * SalesAnomalies - 매출 이상 탐지 결과 (Python ML 출력)
+   */
+  @odata.draft.enabled
+  entity SalesAnomalies as projection on db.SalesAnomalies;
+
   /**
    * Search 지원 필드 지정
    */
@@ -191,5 +218,20 @@ service InventoryService @(path: '/inventory') {
   annotate MenuItems with {
     code  @Search.defaultSearchElement;
     title @Search.defaultSearchElement;
+  };
+
+  annotate ChurnPredictions with {
+    churnRisk @Search.defaultSearchElement;
+  };
+
+  annotate CustomerSegments with {
+    segmentName @Search.defaultSearchElement;
+    segmentCode @Search.defaultSearchElement;
+  };
+
+  annotate SalesAnomalies with {
+    anomalyType @Search.defaultSearchElement;
+    severity    @Search.defaultSearchElement;
+    metricName  @Search.defaultSearchElement;
   };
 }

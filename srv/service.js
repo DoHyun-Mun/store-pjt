@@ -143,11 +143,24 @@ module.exports = cds.service.impl(async function () {
     if (req.data.quantity != null && req.data.quantity < 0) {
       return req.error(400, '재고 수량은 0 이상이어야 합니다.');
     }
+    // availableQty 자동 계산
+    const qty = req.data.quantity ?? 0;
+    const reserved = req.data.reservedQty ?? 0;
+    req.data.availableQty = qty - reserved;
   });
 
   this.before('UPDATE', Inventories, async (req) => {
     if (req.data.quantity != null && req.data.quantity < 0) {
       return req.error(400, '재고 수량은 0 이상이어야 합니다.');
+    }
+    // availableQty 자동 계산
+    if (req.data.quantity != null || req.data.reservedQty != null) {
+      const existing = await SELECT.one.from(Inventories).where({ ID: req.data.ID });
+      if (existing) {
+        const qty = req.data.quantity ?? existing.quantity ?? 0;
+        const reserved = req.data.reservedQty ?? existing.reservedQty ?? 0;
+        req.data.availableQty = qty - reserved;
+      }
     }
   });
 
@@ -363,6 +376,16 @@ module.exports = cds.service.impl(async function () {
     const updated = await SELECT.one.from(SupplyOrders).where({ ID });
     req.info(`공급 주문 ${so.orderNumber}이(가) 취소되었습니다.`);
     return updated;
+  });
+
+  // ════════════════════════════════════════════════════════════════════
+  // Products - 안전재고 등 수정 안내
+  // ════════════════════════════════════════════════════════════════════
+  this.on('error', (err, req) => {
+    if (err.code === '501' && err.message?.includes('bypass_draft')) {
+      err.message = '이 필드는 상품 관리 화면에서 편집(Edit) 버튼을 눌러 수정해주세요.';
+      err.code = 400;
+    }
   });
 
   // ════════════════════════════════════════════════════════════════════

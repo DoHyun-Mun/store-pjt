@@ -30,3 +30,9 @@ using from './demandforecasts/annotations';
 using from './orderrecommendations/annotations';
 
 using from './menus/annotations';
+
+using from './churnpredictions/annotations';
+
+using from './customersegments/annotations';
+
+using from './salesanomalies/annotations';

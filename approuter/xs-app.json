@@ -1,19 +1,18 @@
 {
   "welcomeFile": "/index.html",
-  "authenticationMethod": "route",
+  "authenticationMethod": "none",
   "routes": [
     {
-      "source": "^/inventory/(.*)$",
-      "target": "/inventory/$1",
+      "source": "^/odata/v4/(.*)$",
+      "target": "/odata/v4/$1",
       "destination": "cap-backend",
-      "authenticationType": "xsuaa",
-      "csrfProtection": false
+      "authenticationType": "none"
     },
     {
       "source": "^(.*)$",
       "target": "$1",
       "destination": "cap-backend",
-      "authenticationType": "xsuaa"
+      "authenticationType": "none"
     }
   ]
 }

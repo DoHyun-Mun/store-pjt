@@ -6,6 +6,7 @@
     <title>점포 상품별 재고 발주 관리 시스템</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
     <style>
         :root {
             --shell-bg: #FFFFFF;
@@ -141,7 +142,7 @@
 
         /* KPI Row */
         .kpi-row {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            display: grid; grid-template-columns: repeat(6, 1fr);
             gap: 0.6rem; margin-bottom: 1rem;
         }
         .kpi-card {
@@ -273,6 +274,15 @@
         </div>
 
         <!-- Shortcuts -->
+
+        <!-- Supply Chain Network Graph -->
+        <div class="chart-card" style="margin-bottom:1rem;">
+            <div class="chart-title" style="justify-content:space-between;">
+                <span><span class="ct-icon">🔗</span> 공급망 네트워크 (Supply Chain)</span>
+                <span style="font-size:0.65rem;color:var(--text-tertiary);font-weight:400;">🟣 공급업체&nbsp;&nbsp;&nbsp;🟡 자재&nbsp;&nbsp;&nbsp;🔵 상품&nbsp;&nbsp;&nbsp;🟢 점포</span>
+            </div>
+            <div id="supplyChainGraph" style="width:100%;height:350px;border:1px solid var(--border-light);border-radius:8px;background:#FAFBFC;"></div>
+        </div>
         <div class="shortcut-section">
             <h3>⚡ 바로가기</h3>
             <div class="shortcut-row" id="shortcutGrid"></div>
@@ -357,11 +367,13 @@ async function loadDashboardData() {
 
     // Shortcuts
     renderShortcuts();
+    await loadSupplyChainGraph();
 }
 
 async function loadSalesChart() {
     try {
-        const res = await fetch('/inventory/DailySales?$orderby=salesDate asc&$select=salesDate,revenue');
+        const d7 = new Date(); d7.setDate(d7.getDate()-7); const d7str = d7.toISOString().slice(0,10);
+        const res = await fetch('/inventory/DailySales?$orderby=salesDate asc&$select=salesDate,revenue&$filter=salesDate ge ' + d7str);
         if (!res.ok) return;
         const data = await res.json();
         const items = data.value || [];
@@ -409,7 +421,8 @@ async function loadSalesChart() {
 
 async function loadInventoryChart() {
     try {
-        const res = await fetch('/inventory/InventorySnapshots?$orderby=snapshotDate asc&$select=snapshotDate,quantity,availableQty');
+        const s7 = new Date(); s7.setDate(s7.getDate()-7); const s7str = s7.toISOString().slice(0,10);
+        const res = await fetch('/inventory/InventorySnapshots?$orderby=snapshotDate asc&$select=snapshotDate,quantity,availableQty&$filter=snapshotDate ge ' + s7str);
         if (!res.ok) return;
         const data = await res.json();
         const items = data.value || [];
@@ -500,11 +513,68 @@ function renderShortcuts() {
         { icon: '🚚', title: '공급 주문', url: '/supplyorders/webapp/index.html' },
         { icon: '👤', title: '고객 관리', url: '/customers/webapp/index.html' },
         { icon: '💰', title: '일별 매출', url: '/dailysales/webapp/index.html' },
-        { icon: '🔮', title: '수요 예측', url: '/demandforecasts/webapp/index.html' }
+        { icon: '🔮', title: '수요 예측', url: '/demandforecasts/webapp/index.html' },
+        { icon: '⚠️', title: '이탈 예측', url: '/churnpredictions/webapp/index.html' },
+        { icon: '🎯', title: '고객 세분화', url: '/customersegments/webapp/index.html' },
+        { icon: '🚨', title: '매출 이상 탐지', url: '/salesanomalies/webapp/index.html' }
     ];
     grid.innerHTML = sc.map(s => `<a class="shortcut-card" onclick="showContentFrame('${s.url}')">${s.icon} ${s.title}</a>`).join('');
 }
 
+
+async function loadSupplyChainGraph() {
+    try {
+        const [supRes, matRes, prodRes, storeRes, pmRes, spRes] = await Promise.all([
+            fetch("/inventory/Suppliers?$top=10&$select=ID,name&$filter=isActive eq true"),
+            fetch("/inventory/Materials?$top=15&$select=ID,name,supplier_ID&$filter=isActive eq true"),
+            fetch("/inventory/Products?$top=10&$select=ID,name&$filter=isActive eq true"),
+            fetch("/inventory/Stores?$top=5&$select=ID,name&$filter=isActive eq true"),
+            fetch("/inventory/ProductMaterials?$top=30&$select=product_ID,material_ID"),
+            fetch("/inventory/StoreProducts?$top=30&$select=store_ID,product_ID&$filter=isActive eq true")
+        ]);
+        const suppliers = (await supRes.json()).value || [];
+        const materials = (await matRes.json()).value || [];
+        const products = (await prodRes.json()).value || [];
+        const stores = (await storeRes.json()).value || [];
+        const prodMats = (await pmRes.json()).value || [];
+        const storePrds = (await spRes.json()).value || [];
+
+        var nodes = [];
+        var edges = [];
+        var nodeIds = new Set();
+
+        suppliers.forEach(function(s) { nodes.push({id:"S_"+s.ID, label:"🟣 "+s.name+"\n(공급업체)", group:"supplier", shape:"box", color:{background:"#EDE7F6",border:"#7C4DFF"}, font:{color:"#333",size:11,multi:true}, margin:8}); nodeIds.add("S_"+s.ID); });
+        materials.forEach(function(m) { nodes.push({id:"M_"+m.ID, label:"🟡 "+m.name+"\n(자재)", group:"material", shape:"box", color:{background:"#FFF8E1",border:"#FFC107"}, font:{color:"#333",size:10,multi:true}, margin:6}); nodeIds.add("M_"+m.ID); });
+        products.forEach(function(p) { nodes.push({id:"P_"+p.ID, label:"🔵 "+p.name+"\n(상품)", group:"product", shape:"box", color:{background:"#E3F2FD",border:"#1976D2"}, font:{color:"#333",size:11,multi:true}, margin:8}); nodeIds.add("P_"+p.ID); });
+        stores.forEach(function(st) { nodes.push({id:"T_"+st.ID, label:"🟢 "+st.name+"\n(점포)", group:"store", shape:"box", color:{background:"#E8F5E9",border:"#43A047"}, font:{color:"#333",size:12,multi:true}, margin:10}); nodeIds.add("T_"+st.ID); });
+
+        materials.forEach(function(m) {
+            if (m.supplier_ID && nodeIds.has("S_"+m.supplier_ID) && nodeIds.has("M_"+m.ID)) {
+                edges.push({from:"S_"+m.supplier_ID, to:"M_"+m.ID, color:{color:"#CE93D8"}, arrows:"to", width:2, label:"공급", font:{size:9,color:"#7B1FA2"}});
+            }
+        });
+        prodMats.forEach(function(pm) {
+            if (nodeIds.has("M_"+pm.material_ID) && nodeIds.has("P_"+pm.product_ID)) {
+                edges.push({from:"M_"+pm.material_ID, to:"P_"+pm.product_ID, color:{color:"#90CAF9"}, arrows:"to", width:2, label:"BOM", font:{size:9,color:"#1565C0"}});
+            }
+        });
+        storePrds.forEach(function(sp) {
+            if (nodeIds.has("P_"+sp.product_ID) && nodeIds.has("T_"+sp.store_ID)) {
+                edges.push({from:"P_"+sp.product_ID, to:"T_"+sp.store_ID, color:{color:"#A5D6A7"}, arrows:"to", width:2, label:"판매", font:{size:9,color:"#2E7D32"}});
+            }
+        });
+
+        var container = document.getElementById("supplyChainGraph");
+        if (!container) return;
+        var data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+        var options = {
+            physics: { solver: "forceAtlas2Based", forceAtlas2Based: { gravitationalConstant: -40, centralGravity: 0.005, springLength: 120 }, stabilization: { iterations: 100 } },
+            interaction: { hover: true, tooltipDelay: 200 },
+            layout: { improvedLayout: true }
+        };
+        var network = new vis.Network(container, data, options); network.once("stabilizationIterationsDone", function() { network.moveTo({scale:1.1}); });
+    } catch(e) { console.warn("Supply Chain Graph 로드 실패:", e); }
+}
 function selectTopMenu(id) {
     activeTopMenuId = id;
     document.querySelectorAll('.top-menu-item').forEach(b => b.classList.toggle('active', b.dataset.id === id));
@@ -553,7 +623,338 @@ function toggleSidebar() {
     else { sb.classList.toggle('collapsed'); mn.classList.toggle('expanded'); }
 }
 
-document.addEventListener('DOMContentLoaded', () => { loadMenuData(); loadDashboardData(); });
+document.addEventListener("DOMContentLoaded", () => { loadMenuData(); loadDashboardData(); toggleChat(); });
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- AI Chat Side Panel (연보라 테마) -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<style>
+:root {
+    --chat-primary: #7C4DFF;
+    --chat-primary-dark: #651FFF;
+    --chat-primary-light: #EDE7F6;
+    --chat-primary-lighter: #F3E8FF;
+    --chat-gradient: linear-gradient(135deg, #7C4DFF, #AA00FF);
+    --chat-width: 380px;
+    --chat-tab-width: 36px;
+}
+
+/* Side Panel */
+.chat-side-panel {
+    position: fixed; top: var(--shell-height); right: 0; bottom: 0;
+    width: var(--chat-width); z-index: 95;
+    background: #FAFAFE;
+    border-left: 1px solid #E8E0F0;
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: -4px 0 24px rgba(124,77,255,0.08);
+}
+.chat-side-panel.open {
+    transform: translateX(0);
+}
+.main.chat-open {
+    margin-right: var(--chat-width);
+    transition: margin-right 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* Toggle Tab - 우측 하단 원형 버튼 */
+.chat-toggle-tab {
+    position: fixed; bottom: 24px; right: 24px; z-index: 96;
+    width: 48px; height: 48px;
+    background: var(--chat-gradient);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: white;
+    box-shadow: 0 4px 16px rgba(124,77,255,0.3);
+    transition: all 0.3s;
+}
+.chat-toggle-tab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(124,77,255,0.4); }
+.chat-toggle-tab .tab-icon { font-size: 1.3rem; }
+.chat-toggle-tab .tab-text { display: none; }
+.chat-toggle-tab.hidden { transform: scale(0); opacity: 0; pointer-events: none; }
+
+/* Chat Header */
+.chat-header {
+    padding: 14px 16px; background: var(--chat-gradient);
+    color: white; display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.chat-header .chat-avatar {
+    width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+}
+.chat-header .chat-info { flex: 1; }
+.chat-header .chat-info .chat-name { font-size: 0.85rem; font-weight: 600; }
+.chat-header .chat-info .chat-status { font-size: 0.65rem; opacity: 0.85; }
+.chat-header .chat-collapse {
+    background: none; border: none; color: white; cursor: pointer;
+    font-size: 1.1rem; padding: 6px; border-radius: 6px; opacity: 0.8;
+    transition: all 0.2s;
+}
+.chat-header .chat-collapse:hover { opacity: 1; background: rgba(255,255,255,0.15); }
+
+/* Messages */
+.chat-messages {
+    flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+}
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-thumb { b도 ackground: #D1C4E9; border-radius: 4px; }
+
+.chat-msg {
+    max-width: 88%; padding: 10px 13px; border-radius: 12px;
+    font-size: 0.82rem; line-height: 1.55; word-wrap: break-word;
+}
+.chat-msg.user {
+    align-self: flex-end; background: var(--chat-primary); color: white;
+    border-bottom-right-radius: 4px;
+}
+.chat-msg.assistant {
+    align-self: flex-start; background: var(--chat-primary-lighter); color: #2D1B69;
+    border: 1px solid #E8D5F5; border-bottom-left-radius: 4px;
+}
+.chat-msg.assistant pre {
+    background: #2D1B69; color: #E8D5F5; padding: 9px 11px;
+    border-radius: 7px; overflow-x: auto; font-size: 0.76rem;
+    margin: 6px 0 4px; font-family: 'Fira Code', monospace;
+}
+.chat-msg.assistant code {
+    background: rgba(124,77,255,0.08); padding: 1px 5px; border-radius: 4px;
+    font-size: 0.78rem; font-family: 'Fira Code', monospace;
+}
+.chat-msg.system {
+    align-self: center; background: #FFF3E0; color: #E65100;
+    font-size: 0.73rem; padding: 5px 10px; border-radius: 6px;
+}
+
+/* Typing */
+.chat-typing {
+    padding: 8px 14px; display: none; gap: 4px; align-items: center;
+}
+.chat-typing.show { display: flex; }
+.chat-typing span {
+    width: 6px; height: 6px; background: var(--chat-primary);
+    border-radius: 50%; animation: typingBounce 1.4s infinite; opacity: 0.6;
+}
+.chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+.chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-4px); }
+}
+
+/* Input */
+.chat-input-area {
+    padding: 10px 12px; border-top: 1px solid #E8E0F0;
+    display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+    background: white;
+}
+.chat-input {
+    flex: 1; border: 1.5px solid #E8E0F0; border-radius: 10px;
+    padding: 9px 12px; font-size: 0.82rem; resize: none;
+    max-height: 90px; min-height: 38px; outline: none;
+    font-family: inherit; line-height: 1.4;
+    transition: border-color 0.2s;
+}
+.chat-input:focus { border-color: var(--chat-primary); }
+.chat-input::placeholder { color: #B39DDB; }
+.chat-send {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--chat-gradient); color: white; border: none;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
+}
+.chat-send:hover { transform: scale(1.05); box-shadow: 0 2px 8px rgba(124,77,255,0.3); }
+.chat-send:disabled { background: #E0E0E0; cursor: not-allowed; transform: none; box-shadow: none; }
+.chat-send svg { width: 16px; height: 16px; }
+
+@media (max-width: 768px) {
+    .chat-side-panel { width: 100%; }
+    .main.chat-open { margin-right: 0; }
+    .chat-toggle-tab { top: auto; bottom: 20px; transform: none; height: 48px; width: 48px; border-radius: 50%; writing-mode: horizontal-tb; }
+    .chat-toggle-tab .tab-text { display: none; }
+}
+
+/* === Chat Resize Handle === */
+.chat-resize-handle {
+    position: absolute; top: 0; left: -4px; bottom: 0; width: 8px;
+    cursor: col-resize; z-index: 10;
+    display: flex; align-items: center; justify-content: center;
+}
+.chat-resize-handle::after {
+    content: ""; width: 3px; height: 40px; border-radius: 3px;
+    background: transparent; transition: background 0.2s;
+}
+.chat-resize-handle:hover::after, .chat-resize-handle.active::after {
+    background: var(--chat-primary);
+}
+.chat-side-panel.resizing { transition: none !important; }
+.main.chat-resizing { transition: none !important; }
+body.chat-resizing { cursor: col-resize !important; user-select: none !important; }
+</style>
+
+<!-- Chat Toggle Tab -->
+<div class="chat-toggle-tab" id="chatToggleTab" onclick="toggleChat()">
+    <span class="tab-icon">&#x1F916;</span>
+    <span class="tab-text">AI</span>
+</div>
+
+<!-- Chat Side Panel -->
+<div class="chat-side-panel" id="chatPanel">
+    <div class="chat-resize-handle" id="chatResizeHandle"></div>
+    <div class="chat-header">
+        <div class="chat-avatar">&#x1F916;</div>
+        <div class="chat-info">
+            <div class="chat-name">Store AI</div>
+            <div class="chat-status">재고·발주·매출 분석</div>
+        </div>
+        <button class="chat-collapse" onclick="toggleChat()" title="접기">&#x276E;</button>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg assistant">
+            안녕하세요! &#x1F44B; <strong>Store AI</strong>입니다.<br>
+            재고, 매출, 고객 분석 등 무엇이든 물어보세요!
+        </div>
+    </div>
+    <div class="chat-typing" id="chatTyping">
+        <span></span><span></span><span></span>
+    </div>
+    <div class="chat-input-area">
+        <textarea class="chat-input" id="chatInput" placeholder="질문을 입력하세요..." rows="1"
+                  onkeydown="handleChatKey(event)" oninput="autoResizeInput(this)"></textarea>
+        <button class="chat-send" id="chatSendBtn" onclick="sendChatMessage()" title="전송">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// AI Chat Side Panel Logic
+// ═══════════════════════════════════════════════════════════════
+let chatHistory = [];
+let chatOpen = false;
+let chatSending = false;
+
+function toggleChat() {
+    chatOpen = !chatOpen;
+    const panel = document.getElementById('chatPanel');
+    const tab = document.getElementById('chatToggleTab');
+    const main = document.getElementById('main');
+    if (chatOpen) {
+        panel.classList.add('open');
+        tab.classList.add('hidden');
+        main.classList.add('chat-open');
+        document.getElementById('chatInput').focus();
+    } else {
+        panel.classList.remove('open');
+        tab.classList.remove('hidden');
+        main.classList.remove('chat-open');
+    }
+}
+
+function handleChatKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+}
+
+function autoResizeInput(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 90) + 'px';
+}
+
+function appendMessage(role, content) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-msg ${role}`;
+    if (role === 'assistant') { msgDiv.innerHTML = renderMarkdown(content); }
+    else if (role === 'system') { msgDiv.innerHTML = content; }
+    else { msgDiv.textContent = content; }
+    const container = document.getElementById('chatMessages');
+    container.appendChild(msgDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+function renderMarkdown(text) {
+    return text
+        .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
+}
+
+function setTyping(show) {
+    document.getElementById('chatTyping').classList.toggle('show', show);
+    if (show) { const c = document.getElementById('chatMessages'); c.scrollTop = c.scrollHeight; }
+}
+
+async function sendChatMessage() {
+    if (chatSending) return;
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    input.value = ''; input.style.height = 'auto';
+    appendMessage('user', message);
+    chatSending = true;
+    document.getElementById('chatSendBtn').disabled = true;
+    setTyping(true);
+
+    try {
+        const response = await fetch('/chat/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, history: chatHistory })
+        });
+        const data = await response.json();
+        if (data.success !== false && data.reply) {
+            appendMessage('assistant', data.reply);
+            chatHistory.push({ role: 'user', content: message });
+            chatHistory.push({ role: 'assistant', content: data.reply });
+            if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+        } else {
+            appendMessage('system', '&#x26A0;&#xFE0F; ' + (data.error || '응답을 받을 수 없습니다.'));
+        }
+    } catch (error) {
+        appendMessage('system', '&#x26A0;&#xFE0F; 네트워크 오류가 발생했습니다.');
+    } finally {
+        chatSending = false;
+        document.getElementById('chatSendBtn').disabled = false;
+        setTyping(false);
+    }
+}
+
+// Chat Panel Resize (drag to resize)
+(function() {
+    var handle = document.getElementById("chatResizeHandle");
+    var panel = document.getElementById("chatPanel");
+    var main = document.getElementById("main");
+    var MIN_W = 300, MAX_W = 800;
+    var isResizing = false, startX, startWidth;
+    if (!handle) return;
+    handle.addEventListener("mousedown", function(e) {
+        isResizing = true; startX = e.clientX; startWidth = panel.offsetWidth;
+        panel.classList.add("resizing"); main.classList.add("chat-resizing");
+        document.body.classList.add("chat-resizing"); handle.classList.add("active");
+        e.preventDefault();
+    });
+    document.addEventListener("mousemove", function(e) {
+        if (!isResizing) return;
+        var diff = startX - e.clientX;
+        var nw = Math.min(MAX_W, Math.max(MIN_W, startWidth + diff));
+        panel.style.width = nw + "px";
+        main.style.marginRight = nw + "px";
+        document.documentElement.style.setProperty("--chat-width", nw + "px");
+    });
+    document.addEventListener("mouseup", function() {
+        if (!isResizing) return;
+        isResizing = false;
+        panel.classList.remove("resizing"); main.classList.remove("chat-resizing");
+        document.body.classList.remove("chat-resizing"); handle.classList.remove("active");
+    });
+})();
 </script>
 </body>
 </html>

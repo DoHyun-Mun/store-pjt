@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "/Users/I553966/Documents/SAP/BTP/Training/AI_WorkShop_2026/store-pjt"
+		}
+	],
+	"settings": {
+		"json.schemaDownload.enable": true,
+		"store-pjt.sapFiori.enableDocSearch": true,
+		"store-pjt.sapFiori.enableSAPWebAnalytics": true,
+		"editor.formatOnSave": true,
+		"editor.tabSize": 4
+	}
+}

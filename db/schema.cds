@@ -129,8 +129,8 @@ entity Inventories : cuid, managed {
   product      : Association to Products;
   store        : Association to Stores;
   warehouse    : String(50);   // 창고 코드
-  quantity     : Integer not null default 0 @assert.range: [ 0, ];
-  reservedQty  : Integer default 0 @assert.range: [ 0, ];
+  quantity     : Integer not null default 0;
+  reservedQty  : Integer default 0;
   availableQty : Integer default 0;  // computed: quantity - reservedQty
   minStock     : Integer default 0;  // 적정 최소 재고
   maxStock     : Integer default 0;  // 적정 최대 재고
@@ -145,7 +145,7 @@ entity PurchaseOrders : cuid, managed {
   product      : Association to Products;
   store        : Association to Stores;      // 발주 대상 점포
   supplier     : Association to Suppliers;   // 발주 대상 공급업체
-  quantity     : Integer not null @assert.range: [ 1, ];
+  quantity     : Integer not null;
   unitPrice    : Decimal(15,2) default 0;
   totalAmount  : Decimal(15,2) default 0;    // computed: quantity * unitPrice
   status       : String(20) default 'Draft'; // Draft / Submitted / Approved / Rejected / Received
@@ -182,7 +182,7 @@ entity SupplyOrderItems : cuid, managed {
   supplyOrder  : Association to SupplyOrders;
   product      : Association to Products;
   material     : Association to Materials;
-  quantity     : Integer not null default 1 @assert.range: [ 1, ];
+  quantity     : Integer not null default 1;
   unitPrice    : Decimal(15,2) default 0;
   totalPrice   : Decimal(15,2) default 0;   // computed: quantity * unitPrice
   note         : String(200);
@@ -315,4 +315,61 @@ entity OrderRecommendations : cuid, managed {
   priority        : String(10);                // HIGH / MEDIUM / LOW
   status          : String(20) default 'Pending'; // Pending / Accepted / Rejected / Ordered
   note            : String(500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ChurnPrediction (고객 이탈 예측 결과 - Python ML 출력)
+// ═══════════════════════════════════════════════════════════════════════
+entity ChurnPredictions : cuid, managed {
+  customer        : Association to Customers;
+  churnScore      : Decimal(5,4) default 0;    // 이탈 확률 0.0000~1.0000
+  churnRisk       : String(10);                // HIGH / MEDIUM / LOW
+  recencyDays     : Integer default 0;         // 마지막 방문 이후 일수
+  frequency       : Integer default 0;         // 방문 횟수
+  monetary        : Decimal(15,2) default 0;   // 총 구매 금액
+  avgPurchaseAmount : Decimal(15,2) default 0; // 평균 구매 금액
+  daysSinceRegistered : Integer default 0;     // 가입 이후 일수
+  modelName       : String(50);                // XGBoost, RandomForest 등
+  modelVersion    : String(20);
+  accuracy        : Decimal(5,2);              // 모델 정확도 (%)
+  predictedAt     : Timestamp;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CustomerSegment (고객 세분화 결과 - Python ML 출력)
+// ═══════════════════════════════════════════════════════════════════════
+entity CustomerSegments : cuid, managed {
+  customer         : Association to Customers;
+  segmentName      : String(50);               // Champions, Loyal, AtRisk, Lost 등
+  segmentCode      : String(20);               // CHAMP, LOYAL, ATRISK, LOST 등
+  rfmScore         : Integer default 0;        // 종합 RFM 점수 (3~15)
+  recencyScore     : Integer default 0;        // R 점수 (1~5)
+  frequencyScore   : Integer default 0;        // F 점수 (1~5)
+  monetaryScore    : Integer default 0;        // M 점수 (1~5)
+  clusterLabel     : Integer default 0;        // K-Means 클러스터 번호
+  description      : String(500);              // 세그먼트 설명
+  modelName        : String(50);               // KMeans, RFM 등
+  modelVersion     : String(20);
+  analyzedAt       : Timestamp;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SalesAnomaly (매출 이상 탐지 결과 - Python ML 출력)
+// ═══════════════════════════════════════════════════════════════════════
+entity SalesAnomalies : cuid, managed {
+  store            : Association to Stores;
+  product          : Association to Products;
+  salesDate        : Date;
+  metricName       : String(50);               // revenue, quantity, customerCount, profit
+  actualValue      : Decimal(15,2) default 0;  // 실제 값
+  expectedValue    : Decimal(15,2) default 0;  // 예측/기대 값
+  deviation        : Decimal(15,2) default 0;  // 편차 (actual - expected)
+  zScore           : Decimal(8,4) default 0;   // Z-Score
+  anomalyType      : String(20);               // SPIKE(급증) / DROP(급감) / NORMAL
+  severity         : String(10);               // HIGH / MEDIUM / LOW
+  movingAvg        : Decimal(15,2) default 0;  // 이동평균값
+  stdDev           : Decimal(15,2) default 0;  // 표준편차
+  modelName        : String(50);               // IsolationForest, ZScore 등
+  modelVersion     : String(20);
+  detectedAt       : Timestamp;
 }

@@ -1,0 +1,10 @@
+{
+  "file_suffixes": {
+    "hdbrole": {
+      "plugin_name": "com.sap.hana.di.role"
+    },
+    "hdbgrants": {
+      "plugin_name": "com.sap.hana.di.role.grantor"
+    }
+  }
+}

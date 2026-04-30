@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: fiori-mcp-test
-  namespace: fiori-mcp-test
+  name: store-pjt
+  namespace: store-pjt
   labels:
-    app: fiori-mcp-test
+    app: store-pjt
 spec:
   type: ClusterIP
   ports:
@@ -12,4 +12,4 @@ spec:
       targetPort: 4004
       protocol: TCP
   selector:
-    app: fiori-mcp-test
+    app: store-pjt

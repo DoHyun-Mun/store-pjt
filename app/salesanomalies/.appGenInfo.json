@@ -1,0 +1,28 @@
+{
+  "generationParameters": {
+    "generationDate": "Tue Apr 21 2026 10:49:48 GMT+0900 (Korean Standard Time)",
+    "generatorPlatform": "CLI",
+    "serviceType": "Local CAP",
+    "metadataFilename": "",
+    "serviceUrl": "http://localhost:4004/inventory/",
+    "appName": "salesanomalies",
+    "appTitle": "매출 이상 탐지",
+    "appDescription": "매출 이상 탐지 결과 뷰어 (Z-Score/IsolationForest)",
+    "appNamespace": "",
+    "ui5Theme": "sap_horizon",
+    "ui5Version": "1.136.7",
+    "enableEslint": true,
+    "enableTypeScript": false,
+    "showMockDataInfo": false,
+    "generatorVersion": "1.22.0",
+    "template": "List Report Page V4",
+    "generatorName": "SAP Fiori Application Generator",
+    "entityRelatedConfig": [
+      {
+        "type": "Main Entity",
+        "value": "SalesAnomalies"
+      }
+    ],
+    "launchText": "To launch the generated app, start your CAP project:  and navigate to the following location in your browser:\n\nhttp://localhost:4004/salesanomalies/webapp/index.html"
+  }
+}

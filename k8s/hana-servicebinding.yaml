@@ -2,7 +2,7 @@ apiVersion: services.cloud.sap.com/v1
 kind: ServiceBinding
 metadata:
   name: hana-hdi-binding
-  namespace: fiori-mcp-test
+  namespace: store-pjt
 spec:
   serviceInstanceName: hana-hdi
   secretName: hana-hdi-secret

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: approuter-xs-app
-  namespace: fiori-mcp-test
+  namespace: store-pjt
 data:
   xs-app.json: |
     {
