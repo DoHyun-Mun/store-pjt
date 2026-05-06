@@ -1006,9 +1006,9 @@ function checkAndLinkForecast(content, msgDiv) {
     var detectedStore = "";
     var detectedProduct = "";
     storeNames.forEach(function(sn) { if (content.indexOf(sn) !== -1) detectedStore = sn; });
-    // 상품명은 따옴표 안이나 첫 문장에서 추출
-    // 상품명 추출 (간단한 방식 - 따옴표 안 텍스트)
-    var qMatch = content.match(/["\u201c\u300c]([^"\u201d\u300d]{2,30})["\u201d\u300d]/);
+    // 상품명 추출 (간단한 방식)
+    var qMatch = null;
+    try { qMatch = content.match(/"([^"]{2,30})"/); } catch(e) {}
     if (qMatch) detectedProduct = qMatch[1];
     if (!detectedProduct && detectedStore) {
         var idx2 = content.indexOf(detectedStore);
@@ -1039,10 +1039,9 @@ function checkAndLinkForecast(content, msgDiv) {
     btn.textContent = "📊 예측 결과 상세 보기";
     btn.onclick = function() {
         showContentFrame("/demandforecasts/webapp/index.html"); highlightMenuForUrl("/demandforecasts/webapp/index.html");
-        setTimeout(function() {
-            var frame = document.getElementById("contentFrame");
-            if (frame && frame.contentWindow) frame.contentWindow.postMessage({type:"forecastUpdate"}, "*");
-        }, 500);
+        var frame = document.getElementById("contentFrame");
+        var origOnload = frame.onload;
+        frame.onload = function() { document.getElementById('frameLoader').classList.add('hidden'); setTimeout(function() { frame.contentWindow.postMessage({type:"forecastUpdate"}, "*"); }, 200); };
     };
     if (!/발주\s*추천|추천\s*발주/i.test(content)) { msgDiv.appendChild(btn); }
 
@@ -1069,10 +1068,10 @@ function checkAndLinkForecast(content, msgDiv) {
         var mlCurrentStock = extractNum(content, /현재\s*재고[：:]*\s*([\d,.]+)/i);
         var mlSafetyStock = extractNum(content, /안전\s*재고[：:]*\s*([\d,.]+)/i);
         var mlReorderPoint = extractNum(content, /재주문\s*시점[：:]*\s*([\d,.]+)/i);
-        var mlRecommendedQty = extractNum(content, /추천\s*발주\s*수량[：:]*\s*([\d,.]+)/i) || extractNum(content, /추천\s*조치[：:]*\s*([\d,.]+)/i) || extractNum(content, /([\d,.]+)개\s*발주/i);
+        var mlRecommendedQty = extractNum(content, /추천\s*발주\s*수량[：:]*\s*([\d,.]+)/i) || extractNum(content, /추천\s*조치[：:]*\s*([\d,.]+)/i);
         var mlEstimatedCost = extractVal(content, /예상\s*비용[：:]*\s*([^\n]+)/i);
         var mlUrgency = extractVal(content, /긴급도[：:]*\s*([^\n(]+)/i);
-        var mlStockDays = extractVal(content, /재고\s*(?:소진|지속)\s*(?:예상|일수)[：:]*\s*([^\n]+)/i) || extractVal(content, /재고\s*([\d.]+)\s*일/i);
+        var mlStockDays = extractVal(content, /재고\s*(?:소진|지속)\s*(?:예상|일수)[：:]*\s*([^\n]+)/i);
         var mlModel = extractVal(content, /모델[：:]\s*([^\n]+)/i);
         // RPT-1 예측 - 다양한 형식 매칭
         var rptTotal = extractNum(content, /총\s*7일\s*예측\s*수[량:：]*\s*([\d,.]+)/i) || extractNum(content, /7일\s*총\s*수요\s*예측[：:]*\s*([\d,.]+)/i) || extractNum(content, /향후\s*7일\s*수요\s*예측[：:]*\s*([\d,.]+)/i) || extractNum(content, /RPT.*7일.*예측[：:]*\s*([\d,.]+)/i) || extractNum(content, /7일\s*수요\s*예측[：:]*\s*([\d,.]+)/i);
@@ -1083,7 +1082,7 @@ function checkAndLinkForecast(content, msgDiv) {
         var tsTrend = extractVal(content, /추세\s*변화율[：:]*\s*([^\n]+)/i);
         // 외부 요인 - 유연한 패턴
         var extDay = extractVal(content, /오늘[：:]*\s*([^\n]+)/i) || extractVal(content, /요일[：:]*\s*([^\n]+)/i);
-        var extSeason = extractVal(content, /계절[：:]*\s*([^\n]+)/i) || extractVal(content, /(?:봄|여름|가을|겨울)[,，]?\s*([^\n]*)/i);
+        var extSeason = extractVal(content, /계절[：:]*\s*([^\n]+)/i);
         var extNews = extractVal(content, /뉴스\s*트렌드[：:]*\s*([^\n]+)/i) || extractVal(content, /신학기|트렌드[：:]*\s*([^\n]+)/i);
         // AI 종합 판단
         var aiConclusion = extractVal(content, /결론[：:]*\s*([^\n]+)/i);
@@ -1138,7 +1137,8 @@ function checkAndLinkForecast(content, msgDiv) {
         btn2.onclick = function() {
             showContentFrame("/orderrecommendations/webapp/index.html");
             highlightMenuForUrl("/orderrecommendations/webapp/index.html");
-            setTimeout(function() { var frame = document.getElementById("contentFrame"); if (frame && frame.contentWindow) frame.contentWindow.postMessage({type:"recommendationUpdate"}, "*"); }, 500);
+            var frame = document.getElementById("contentFrame");
+            frame.onload = function() { document.getElementById('frameLoader').classList.add('hidden'); setTimeout(function() { frame.contentWindow.postMessage({type:"recommendationUpdate"}, "*"); }, 200); };
         };
         msgDiv.appendChild(btn2);
     }

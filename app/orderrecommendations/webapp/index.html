@@ -258,7 +258,8 @@ function renderChart(d) {
 }
 window.addEventListener("storage", function(e) { if (e.key === "orderRecommendationData") loadData(); });
 window.addEventListener("message", function(e) { if (e.data && e.data.type === "recommendationUpdate") loadData(); });
-loadData();
+// Only load on message from parent (not on initial page load)
+// loadData();
 </script>
 </body>
 </html>
