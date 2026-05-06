@@ -1,35 +1,264 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>발주 추천</title>
-    <style>
-        html, body, body > div, #container, #container-uiarea {
-            height: 100%;
-        }
-    </style>
-    <script
-        id="sap-ui-bootstrap"
-        src="https://sapui5.hana.ondemand.com/1.136.7/resources/sap-ui-core.js"
-        data-sap-ui-theme="sap_horizon"
-        data-sap-ui-resource-roots='{
-            "orderrecommendations": "./"
-        }'
-        data-sap-ui-on-init="module:sap/ui/core/ComponentSupport"
-        data-sap-ui-compat-version="edge"
-        data-sap-ui-async="true"
-        data-sap-ui-frame-options="trusted"
-    ></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>발주 추천 결과</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,sans-serif;background:#F5F6FA;color:#1D2D3E;padding:1.5rem;overflow-y:auto}
+.header{display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem}
+.header h1{font-size:1.1rem;font-weight:700}
+.header .meta{font-size:0.75rem;color:#8396A8;margin-left:auto}
+.urgency-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:700;margin-left:0.5rem}
+.urgency-HIGH{background:#FCE8E6;color:#D93025;border:1px solid #F5C6CB}
+.urgency-MEDIUM{background:#FEF3E0;color:#E37400;border:1px solid #F5D5A0}
+.urgency-LOW{background:#E6F4EA;color:#188038;border:1px solid #B7E1CD}
+.target-bar{padding:0.6rem 1rem;background:linear-gradient(135deg,#1D2D3E,#2D4A6E);border-radius:10px;color:white;display:flex;align-items:center;gap:1.5rem;margin-bottom:1rem;font-size:0.8rem}
+.target-bar strong{font-size:0.9rem}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0.6rem;margin-bottom:1rem}
+.kpi{background:white;border:1px solid #E5E8ED;border-radius:10px;padding:0.85rem;text-align:center}
+.kpi .val{font-size:1.4rem;font-weight:700;line-height:1.2}
+.kpi .lbl{font-size:0.68rem;color:#8396A8;margin-top:0.15rem}
+.kpi.danger .val{color:#D93025}
+.kpi.warn .val{color:#E37400}
+.kpi.info .val{color:#0070F2}
+.kpi.ok .val{color:#188038}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem}
+.card{background:white;border:1px solid #E5E8ED;border-radius:10px;padding:1rem}
+.card h3{font-size:0.82rem;font-weight:600;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.35rem}
+.card .item{display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid #F5F6FA;font-size:0.78rem}
+.card .item:last-child{border-bottom:none}
+.card .item .k{color:#556B82}
+.card .item .v{font-weight:600;color:#1D2D3E}
+.chart-card{background:white;border:1px solid #E5E8ED;border-radius:10px;padding:1rem;margin-bottom:1rem}
+.chart-card h3{font-size:0.82rem;font-weight:600;margin-bottom:0.6rem}
+.chart-wrap{height:200px;position:relative}
+.reasons-card{background:white;border:1px solid #E5E8ED;border-radius:10px;padding:1rem;margin-bottom:1rem}
+.reasons-card h3{font-size:0.82rem;font-weight:600;margin-bottom:0.6rem}
+.reason-item{padding:0.4rem 0;font-size:0.78rem;line-height:1.5;border-bottom:1px solid #F8F9FB}
+.reason-item:last-child{border-bottom:none}
+.judgment-banner{padding:1rem 1.25rem;border-radius:10px;margin-bottom:1rem;border:2px solid}
+.judgment-banner.HIGH{background:linear-gradient(135deg,#E6F4EA,#EBF3FE);border-color:#188038}
+.judgment-banner.MEDIUM{background:linear-gradient(135deg,#FEF3E0,#EBF3FE);border-color:#E37400}
+.judgment-banner h3{font-size:0.85rem;font-weight:700;margin-bottom:0.5rem}
+.judgment-banner .conclusion{font-size:0.8rem;line-height:1.6;color:#1D2D3E;margin-bottom:0.4rem}
+.judgment-banner .conf{font-size:0.75rem;color:#556B82}
+.judgment-banner .recommend{margin-top:0.4rem;font-size:0.8rem;font-weight:600;color:#0070F2}
+.action-bar{padding:1rem;background:linear-gradient(135deg,#FEF3E0,#FCE8E6);border-radius:10px;border:1px solid #F5D5A0;display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
+.action-bar .info{flex:1}
+.action-bar .info .t{font-size:0.85rem;font-weight:700;margin-bottom:0.2rem}
+.action-bar .info .d{font-size:0.72rem;color:#556B82}
+.btn-primary{padding:0.55rem 1.2rem;background:linear-gradient(135deg,#E37400,#D93025);color:white;border:none;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer}
+.btn-secondary{padding:0.55rem 1.2rem;background:white;color:#E37400;border:1.5px solid #E37400;border-radius:8px;font-size:0.78rem;font-weight:600;cursor:pointer}
+#poForm{display:none;margin-bottom:1rem;padding:1rem;background:white;border:2px solid #E37400;border-radius:10px}
+#poForm h3{font-size:0.85rem;font-weight:700;color:#E37400;margin-bottom:0.75rem}
+#poForm .grid{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.75rem}
+#poForm label{font-size:0.7rem;color:#556B82;display:block;margin-bottom:0.2rem}
+#poForm select,#poForm input{width:100%;padding:0.45rem;border:1px solid #E5E8ED;border-radius:6px;font-size:0.78rem}
+.empty-state{text-align:center;padding:4rem 2rem;color:#8396A8}
+.empty-state .icon{font-size:3rem;margin-bottom:1rem}
+</style>
 </head>
-<body class="sapUiBody sapUiSizeCompact" id="content">
-    <div
-        data-sap-ui-component
-        data-name="orderrecommendations"
-        data-id="container"
-        data-settings='{"id" : "orderrecommendations"}'
-        data-handle-validation="true"
-    ></div>
+<body>
+<div id="emptyState" class="empty-state">
+<div class="icon">📋</div>
+<p>AI Chat에서 발주 추천을 요청하면<br>여기에 시각화 결과가 표시됩니다.</p>
+<p style="margin-top:0.75rem;font-size:0.78rem;color:#B0B8C4;">예: "강남 본점 발주 추천해줘"</p>
+</div>
+<div id="resultView" style="display:none;">
+<div class="header">
+<h1>📋 AI 발주 추천</h1>
+<span class="urgency-badge" id="urgBadge">-</span>
+<span class="meta" id="recMeta"></span>
+</div>
+<div class="target-bar" id="targetBar">
+<span>🏪 <strong id="tStore">-</strong></span>
+<span>📦 <strong id="tProduct">-</strong></span>
+<span>🤖 <strong id="tModel">-</strong></span>
+</div>
+<div class="kpi-row">
+<div class="kpi danger"><div class="val" id="kCurrentStock">-</div><div class="lbl">현재 재고</div></div>
+<div class="kpi warn"><div class="val" id="kRecommendQty">-</div><div class="lbl">추천 발주량</div></div>
+<div class="kpi info"><div class="val" id="kEstCost">-</div><div class="lbl">예상 비용</div></div>
+<div class="kpi ok"><div class="val" id="kStockDays">-</div><div class="lbl">재고 소진 예상</div></div>
+</div>
+<div class="two-col">
+<div class="card">
+<h3>🧠 ML 예측 (Safety Stock + EOQ)</h3>
+<div class="item"><span class="k">현재 재고</span><span class="v" id="mlStock">-</span></div>
+<div class="item"><span class="k">안전 재고</span><span class="v" id="mlSafety">-</span></div>
+<div class="item"><span class="k">재주문 시점</span><span class="v" id="mlReorder">-</span></div>
+<div class="item"><span class="k">추천 발주 수량</span><span class="v" id="mlQty">-</span></div>
+<div class="item"><span class="k">예상 비용</span><span class="v" id="mlCost">-</span></div>
+<div class="item"><span class="k">긴급도</span><span class="v" id="mlUrg">-</span></div>
+</div>
+<div class="card">
+<h3>🔮 RPT-1 AI 예측 (7일 수요)</h3>
+<div class="item"><span class="k">총 7일 예측 수량</span><span class="v" id="rptTotal">-</span></div>
+<div class="item"><span class="k">일 평균 예측 수량</span><span class="v" id="rptDaily">-</span></div>
+<div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid #EEF1F5">
+<h3 style="font-size:0.78rem">📈 시계열 분석</h3>
+<div class="item"><span class="k">최근 7일 평균</span><span class="v" id="ts7">-</span></div>
+<div class="item"><span class="k">최근 30일 평균</span><span class="v" id="ts30">-</span></div>
+<div class="item"><span class="k">추세 변화율</span><span class="v" id="tsTrend">-</span></div>
+</div>
+</div>
+</div>
+<div class="chart-card">
+<h3>📊 수요 예측 비교 (ML vs RPT-1)</h3>
+<div class="chart-wrap"><canvas id="compareChart"></canvas></div>
+</div>
+<div class="two-col">
+<div class="reasons-card">
+<h3>📝 발주 사유</h3>
+<div id="reasonsList"></div>
+</div>
+<div class="card">
+<h3>🌍 외부 요인</h3>
+<div class="item"><span class="k">요일</span><span class="v" id="extDay">-</span></div>
+<div class="item"><span class="k">계절</span><span class="v" id="extSeason">-</span></div>
+<div class="item"><span class="k">뉴스 트렌드</span><span class="v" id="extNews">-</span></div>
+</div>
+</div>
+<div class="judgment-banner HIGH" id="judgmentBanner">
+<h3>🤖 AI 종합 판단</h3>
+<div class="conclusion" id="jConclusion">-</div>
+<div class="conf" id="jConfidence">-</div>
+<div class="recommend" id="jRecommend">-</div>
+</div>
+<div class="action-bar">
+<div class="info"><div class="t">💡 다음 단계</div><div class="d">추천 결과를 기반으로 발주서를 생성하시겠습니까?</div></div>
+<button class="btn-primary" onclick="showPOForm()">📋 발주 생성</button>
+<button class="btn-secondary" onclick="viewInventory()">📦 재고 현황</button>
+</div>
+<div id="poForm">
+<h3>📋 발주 생성 (추천 기반 자동 채움)</h3>
+<div class="grid">
+<div><label>점포</label><select id="poStore"></select></div>
+<div><label>상품</label><select id="poProduct"></select></div>
+<div><label>발주 수량</label><input id="poQty" type="number"/></div>
+<div><label>단가 (₩)</label><input id="poPrice" type="number" value="20000"/></div>
+</div>
+<div style="display:flex;gap:0.6rem">
+<button onclick="submitPO()" style="padding:0.5rem 1.2rem;background:#E37400;color:white;border:none;border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer">✅ 발주 생성</button>
+<button onclick="document.getElementById('poForm').style.display='none'" style="padding:0.5rem 0.8rem;background:#F0F2F5;color:#556B82;border:none;border-radius:6px;font-size:0.78rem;cursor:pointer">취소</button>
+</div>
+<div id="poResult" style="margin-top:0.6rem;font-size:0.78rem"></div>
+</div>
+</div>
+<script>
+var chartInst = null;
+function viewInventory() {
+    if (window.parent !== window) window.parent.postMessage({type:"navigateTo",url:"/inventories/webapp/index.html"},"*");
+    else window.location.href = "/inventories/webapp/index.html";
+}
+function showPOForm() {
+    var f = document.getElementById("poForm"); f.style.display = "block"; loadOpts();
+    var raw = localStorage.getItem("orderRecommendationData");
+    if (raw) { var d = JSON.parse(raw); document.getElementById("poQty").value = d.ml ? d.ml.recommendedQty : 10; setTimeout(function(){ var ss=document.getElementById("poStore"); for(var i=0;i<ss.options.length;i++){if(ss.options[i].text.indexOf(d.storeName||"")!==-1){ss.selectedIndex=i;break;}} },300); }
+    f.scrollIntoView({behavior:"smooth"});
+}
+async function loadOpts() {
+    try { var s=await fetch("/inventory/Stores?$top=30&$select=ID,name&$filter=isActive eq true"); var p=await fetch("/inventory/Products?$top=100&$select=ID,name&$filter=isActive eq true"); var stores=(await s.json()).value||[]; var products=(await p.json()).value||[]; document.getElementById("poStore").innerHTML=stores.map(function(x){return'<option value="'+x.ID+'">'+x.name+'</option>';}).join(""); document.getElementById("poProduct").innerHTML=products.map(function(x){return'<option value="'+x.ID+'">'+x.name+'</option>';}).join(""); } catch(e){}
+}
+async function submitPO() {
+    var sid=document.getElementById("poStore").value,pid=document.getElementById("poProduct").value,qty=parseInt(document.getElementById("poQty").value)||10,price=parseInt(document.getElementById("poPrice").value)||20000;
+    var r=document.getElementById("poResult"); r.innerHTML='<span style="color:#556B82">⏳ 생성 중...</span>';
+    try { var res=await fetch("/inventory/PurchaseOrders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({product_ID:pid,store_ID:sid,quantity:qty,unitPrice:price})}); if(res.ok){var po=await res.json();r.innerHTML='<span style="color:#188038;font-weight:600">✅ 발주 생성 완료! '+(po.poNumber||"")+" (수량:"+qty+")</span>";}else{var e=await res.text();r.innerHTML='<span style="color:#D93025">❌ 실패: '+e.substring(0,80)+"</span>";}} catch(e){r.innerHTML='<span style="color:#D93025">❌ 오류: '+e.message+"</span>";}
+}
+function loadData() {
+    var raw = localStorage.getItem("orderRecommendationData");
+    if (!raw) return;
+    try { var d = JSON.parse(raw); document.getElementById("emptyState").style.display="none"; document.getElementById("resultView").style.display="block"; render(d); } catch(e){}
+}
+function render(d) {
+    document.getElementById("recMeta").textContent = d.meta || "";
+    document.getElementById("tStore").textContent = d.storeName || "-";
+    document.getElementById("tProduct").textContent = d.productName || "-";
+    document.getElementById("tModel").textContent = (d.ml && d.ml.model) ? d.ml.model.substring(0,40) : "AI";
+    // urgency badge
+    var p = d.priority || "MEDIUM";
+    var badge = document.getElementById("urgBadge");
+    badge.textContent = p === "HIGH" ? "🔴 긴급" : p === "LOW" ? "🟢 낮음" : "🟠 보통";
+    badge.className = "urgency-badge urgency-" + p;
+    // KPI
+    if (d.ml) {
+        document.getElementById("kCurrentStock").textContent = d.ml.currentStock ? d.ml.currentStock + "개" : "-";
+        document.getElementById("kRecommendQty").textContent = d.ml.recommendedQty ? d.ml.recommendedQty + "개" : "-";
+        document.getElementById("kEstCost").textContent = d.ml.estimatedCost || "-";
+        document.getElementById("kStockDays").textContent = d.ml.stockDays || "-";
+        document.getElementById("mlStock").textContent = d.ml.currentStock ? d.ml.currentStock + "개" : "-";
+        document.getElementById("mlSafety").textContent = d.ml.safetyStock ? d.ml.safetyStock.toFixed(1) + "개" : "-";
+        document.getElementById("mlReorder").textContent = d.ml.reorderPoint ? d.ml.reorderPoint.toFixed(1) + "개" : "-";
+        document.getElementById("mlQty").textContent = d.ml.recommendedQty ? d.ml.recommendedQty + "개" : "-";
+        document.getElementById("mlCost").textContent = d.ml.estimatedCost || "-";
+        document.getElementById("mlUrg").textContent = d.ml.urgency || "-";
+    }
+    // RPT
+    if (d.rpt) {
+        document.getElementById("rptTotal").textContent = d.rpt.totalDemand7d ? d.rpt.totalDemand7d.toFixed(1) + "개" : "-";
+        document.getElementById("rptDaily").textContent = d.rpt.dailyAvg ? d.rpt.dailyAvg.toFixed(1) + "개/일" : "-";
+    }
+    // Timeseries
+    if (d.timeseries) {
+        document.getElementById("ts7").textContent = d.timeseries.avg7d ? d.timeseries.avg7d.toFixed(1) + "개/일" : "-";
+        document.getElementById("ts30").textContent = d.timeseries.avg30d ? d.timeseries.avg30d.toFixed(1) + "개/일" : "-";
+        document.getElementById("tsTrend").textContent = d.timeseries.trend || "-";
+    }
+    // External
+    if (d.external) {
+        document.getElementById("extDay").textContent = d.external.day || "-";
+        document.getElementById("extSeason").textContent = d.external.season || "-";
+        document.getElementById("extNews").textContent = d.external.news || "-";
+    }
+    // Reasons
+    if (d.reasons && d.reasons.length > 0) {
+        document.getElementById("reasonsList").innerHTML = d.reasons.map(function(r){ return '<div class="reason-item">' + r + '</div>'; }).join("");
+    }
+    // AI Judgment
+    if (d.aiJudgment) {
+        document.getElementById("jConclusion").textContent = d.aiJudgment.conclusion || "-";
+        document.getElementById("jConfidence").textContent = "신뢰도: " + (d.aiJudgment.confidence || "-");
+        document.getElementById("jRecommend").textContent = "권고: " + (d.aiJudgment.recommendation || "-");
+        var banner = document.getElementById("judgmentBanner");
+        if (/HIGH/i.test(d.aiJudgment.confidence)) banner.className = "judgment-banner HIGH";
+        else banner.className = "judgment-banner MEDIUM";
+    }
+    // Chart
+    renderChart(d);
+}
+function renderChart(d) {
+    var mlDaily = (d.timeseries && d.timeseries.avg7d) ? d.timeseries.avg7d : 0;
+    var rptDaily = (d.rpt && d.rpt.dailyAvg) ? d.rpt.dailyAvg : 0;
+    var ts7 = (d.timeseries && d.timeseries.avg7d) ? d.timeseries.avg7d : 0;
+    var ts30 = (d.timeseries && d.timeseries.avg30d) ? d.timeseries.avg30d : 0;
+    var rpt7 = (d.rpt && d.rpt.dailyAvg) ? d.rpt.dailyAvg : 0;
+    var rpt30 = rpt7;
+    if (chartInst) chartInst.destroy();
+    chartInst = new Chart(document.getElementById("compareChart"), {
+        type: "bar",
+        data: {
+            labels: ["일평균 수요", "7일 평균", "30일 평균"],
+            datasets: [
+                { label: "ML 예측", data: [mlDaily, ts7, ts30], backgroundColor: "rgba(217,48,37,0.75)", borderColor: "#D93025", borderWidth: 1, borderRadius: 6 },
+                { label: "RPT-1 예측", data: [rptDaily, rpt7, rpt30], backgroundColor: "rgba(0,112,242,0.75)", borderColor: "#0070F2", borderWidth: 1, borderRadius: 6 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: "top", labels: { boxWidth: 14, padding: 16, font: { size: 11 } } } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: "#F0F0F0" }, title: { display: true, text: "개/일", font: { size: 10 } } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+window.addEventListener("storage", function(e) { if (e.key === "orderRecommendationData") loadData(); });
+window.addEventListener("message", function(e) { if (e.data && e.data.type === "recommendationUpdate") loadData(); });
+loadData();
+</script>
 </body>
 </html>

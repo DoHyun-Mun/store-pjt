@@ -739,7 +739,7 @@ function highlightMenuForUrl(url) {
     flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px;
 }
 .chat-messages::-webkit-scrollbar { width: 4px; }
-.chat-messages::-webkit-scrollbar-thumb { b도 ackground: #D1C4E9; border-radius: 4px; }
+.chat-messages::-webkit-scrollbar-thumb { background: #D1C4E9; border-radius: 4px; }
 
 .chat-msg {
     max-width: 88%; padding: 10px 13px; border-radius: 12px;
@@ -922,12 +922,12 @@ function checkAndLinkForecast(content, msgDiv) {
     // 예측 테이블 패턴 감지: | 날짜 | 예측 | 하한 | 상한 | 또는 "수요 예측" 키워드
     const tableRegex = /\|\s*\d{4}-\d{2}-\d{2}\s*\|\s*[\d.]+\s*\|\s*[\d.]+\s*\|\s*[\d.]+\s*\|/g;
     const matches = content.match(tableRegex);
-    const hasForecastKeyword = /수요\s*예측\s*결과|예측\s*판매량|forecastQty/i.test(content);
+    const hasForecastKeyword = /수요\s*예측\s*결과|예측\s*판매량|forecastQty|발주\s*추천|추천\s*발주/i.test(content);
     if (!matches && !hasForecastKeyword) return;
     if (matches && matches.length < 2 && !hasForecastKeyword) return;
 
     // 테이블 데이터 파싱
-    const tableData = matches.map(row => {
+    const tableData = (matches || []).map(row => {
         const cells = row.split("|").filter(c => c.trim());
         return {
             date: cells[0].trim(),
@@ -1044,7 +1044,104 @@ function checkAndLinkForecast(content, msgDiv) {
             if (frame && frame.contentWindow) frame.contentWindow.postMessage({type:"forecastUpdate"}, "*");
         }, 500);
     };
-    msgDiv.appendChild(btn);
+    if (!/발주\s*추천|추천\s*발주/i.test(content)) { msgDiv.appendChild(btn); }
+
+    // 발주 추천 감지 & 데이터 파싱 & 버튼 추가
+    var hasOrderRec = /발주\s*추천|추천\s*발주|order\s*recommend/i.test(content);
+    if (hasOrderRec) {
+        // 발주 추천 데이터 파싱 (리스트 형식: "- 키: 값")
+        function extractVal(text, pattern) {
+            // Remove markdown bold markers before matching
+            var clean = text.replace(/\*\*/g, "");
+            var m = clean.match(pattern);
+            return m ? m[1].trim() : "";
+        }
+        function extractNum(text, pattern) {
+            // Remove markdown bold markers before matching
+            var clean = text.replace(/\*\*/g, "");
+            var m = clean.match(pattern);
+            if (!m) return 0;
+            return parseFloat(m[1].replace(/[,]/g, "")) || 0;
+        }
+        // 상품명
+        var recProduct = extractVal(content, /상품명[：:]\s*(.+)/i) || detectedProduct || "";
+        // ML 예측 - 유연한 패턴 (숫자 뒤 "개" 등 단위 허용)
+        var mlCurrentStock = extractNum(content, /현재\s*재고[：:]*\s*([\d,.]+)/i);
+        var mlSafetyStock = extractNum(content, /안전\s*재고[：:]*\s*([\d,.]+)/i);
+        var mlReorderPoint = extractNum(content, /재주문\s*시점[：:]*\s*([\d,.]+)/i);
+        var mlRecommendedQty = extractNum(content, /추천\s*발주\s*수량[：:]*\s*([\d,.]+)/i) || extractNum(content, /추천\s*조치[：:]*\s*([\d,.]+)/i) || extractNum(content, /([\d,.]+)개\s*발주/i);
+        var mlEstimatedCost = extractVal(content, /예상\s*비용[：:]*\s*([^\n]+)/i);
+        var mlUrgency = extractVal(content, /긴급도[：:]*\s*([^\n(]+)/i);
+        var mlStockDays = extractVal(content, /재고\s*(?:소진|지속)\s*(?:예상|일수)[：:]*\s*([^\n]+)/i) || extractVal(content, /재고\s*([\d.]+)\s*일/i);
+        var mlModel = extractVal(content, /모델[：:]\s*([^\n]+)/i);
+        // RPT-1 예측 - 다양한 형식 매칭
+        var rptTotal = extractNum(content, /총\s*7일\s*예측\s*수[량:：]*\s*([\d,.]+)/i) || extractNum(content, /7일\s*총\s*수요\s*예측[：:]*\s*([\d,.]+)/i) || extractNum(content, /향후\s*7일\s*수요\s*예측[：:]*\s*([\d,.]+)/i) || extractNum(content, /RPT.*7일.*예측[：:]*\s*([\d,.]+)/i) || extractNum(content, /7일\s*수요\s*예측[：:]*\s*([\d,.]+)/i);
+        var rptDaily = extractNum(content, /일\s*평균\s*예측\s*수[량:：]*\s*([\d,.]+)/i) || extractNum(content, /일\s*평균\s*수요\s*예측[：:]*\s*([\d,.]+)/i) || extractNum(content, /예측\s*일\s*평균\s*수요[：:]*\s*([\d,.]+)/i) || extractNum(content, /RPT.*일\s*평균[：:]*\s*([\d,.]+)/i) || extractNum(content, /일\s*평균[：:]*\s*([\d,.]+)개/i);
+        // 시계열 분석 - 유연한 패턴
+        var ts7day = extractNum(content, /최근\s*7일\s*평균[：:]*\s*([\d,.]+)/i);
+        var ts30day = extractNum(content, /최근\s*30일\s*평균[：:]*\s*([\d,.]+)/i);
+        var tsTrend = extractVal(content, /추세\s*변화율[：:]*\s*([^\n]+)/i);
+        // 외부 요인 - 유연한 패턴
+        var extDay = extractVal(content, /오늘[：:]*\s*([^\n]+)/i) || extractVal(content, /요일[：:]*\s*([^\n]+)/i);
+        var extSeason = extractVal(content, /계절[：:]*\s*([^\n]+)/i) || extractVal(content, /(?:봄|여름|가을|겨울)[,，]?\s*([^\n]*)/i);
+        var extNews = extractVal(content, /뉴스\s*트렌드[：:]*\s*([^\n]+)/i) || extractVal(content, /신학기|트렌드[：:]*\s*([^\n]+)/i);
+        // AI 종합 판단
+        var aiConclusion = extractVal(content, /결론[：:]*\s*([^\n]+)/i);
+        var aiConfidence = extractVal(content, /신뢰도[：:]*\s*([^\n]+)/i);
+        var aiRecommend = extractVal(content, /권고[：:]*\s*([^\n]+)/i);
+        // 발주 사유 - 더 넓은 범위 캡처
+        var reasonSection = content.match(/발주\s*사유\s*분석[\s\S]*?(?=###|$)/i) || content.match(/발주\s*사유[:\s][\s\S]*?(?=###|$)/i);
+        var reasons = [];
+        if (reasonSection) {
+            var rLines3 = reasonSection[0].split("\n");
+            for (var r3 = 0; r3 < rLines3.length; r3++) {
+                var rl = rLines3[r3].trim();
+                if (rl.length > 3 && (rl.startsWith("-") || rl.indexOf(":") > 0)) {
+                    reasons.push(rl.replace(/^[-•]\s*/, "").trim());
+                }
+            }
+        }
+        // Fallback: 발주 사유가 없으면 재고 분석에서 추출
+        if (reasons.length === 0) {
+            var stockSection = content.match(/재고\s*분석[\s\S]*?(?=###|-\s*시계열|-\s*외부|$)/i);
+            if (stockSection) {
+                var sLines3 = stockSection[0].split("\n");
+                for (var s3 = 0; s3 < sLines3.length; s3++) {
+                    var sl = sLines3[s3].trim();
+                    if (sl.length > 3 && sl.startsWith("-")) {
+                        reasons.push(sl.replace(/^[-•]\s*/, "").trim());
+                    }
+                }
+            }
+        }
+        // priority
+        var priority = "MEDIUM";
+        if (/높음|HIGH/i.test(mlUrgency)) priority = "HIGH";
+        else if (/낮음|LOW/i.test(mlUrgency)) priority = "LOW";
+
+        var recData = {
+            meta: "AI 발주 추천 | " + (detectedStore || "전체") + " | " + new Date().toLocaleString("ko-KR"),
+            storeName: detectedStore,
+            productName: recProduct,
+            priority: priority,
+            ml: { model: mlModel, currentStock: mlCurrentStock, safetyStock: mlSafetyStock, reorderPoint: mlReorderPoint, recommendedQty: mlRecommendedQty, estimatedCost: mlEstimatedCost, urgency: mlUrgency, stockDays: mlStockDays },
+            rpt: { totalDemand7d: rptTotal, dailyAvg: rptDaily },
+            timeseries: { avg7d: ts7day, avg30d: ts30day, trend: tsTrend },
+            external: { day: extDay, season: extSeason, news: extNews },
+            reasons: reasons,
+            aiJudgment: { conclusion: aiConclusion, confidence: aiConfidence, recommendation: aiRecommend }
+        };
+        localStorage.setItem("orderRecommendationData", JSON.stringify(recData));
+        var btn2 = document.createElement("div");
+        btn2.style.cssText = "margin-top:8px;padding:8px 14px;background:linear-gradient(135deg,#E37400,#D93025);color:white;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:block;width:fit-content;";
+        btn2.textContent = "📋 발주 추천 상세 보기";
+        btn2.onclick = function() {
+            showContentFrame("/orderrecommendations/webapp/index.html");
+            highlightMenuForUrl("/orderrecommendations/webapp/index.html");
+            setTimeout(function() { var frame = document.getElementById("contentFrame"); if (frame && frame.contentWindow) frame.contentWindow.postMessage({type:"recommendationUpdate"}, "*"); }, 500);
+        };
+        msgDiv.appendChild(btn2);
+    }
 }
 
 function renderMarkdown(text) {
