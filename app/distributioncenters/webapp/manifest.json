@@ -1,0 +1,106 @@
+{
+  "_version": "1.73.1",
+  "sap.app": {
+    "id": "distributioncenters",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "dataSources": {
+      "mainService": {
+        "uri": "/inventory/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.136.7",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ushell": {},
+        "sap.fe.templates": {}
+      }
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "distributioncenters.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      }
+    },
+    "routing": {
+      "config": {},
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "DistributionCentersList",
+          "target": "DistributionCentersList"
+        },
+        {
+          "pattern": "DistributionCenters({key}):?query:",
+          "name": "DistributionCentersObjectPage",
+          "target": "DistributionCentersObjectPage"
+        }
+      ],
+      "targets": {
+        "DistributionCentersList": {
+          "type": "Component",
+          "id": "DistributionCentersList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/DistributionCenters",
+              "variantManagement": "Page",
+              "navigation": {
+                "DistributionCenters": {
+                  "detail": {
+                    "route": "DistributionCentersObjectPage"
+                  }
+                }
+              },
+              "initialLoad": "Enabled"
+            }
+          }
+        },
+        "DistributionCentersObjectPage": {
+          "type": "Component",
+          "id": "DistributionCentersObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "contextPath": "/DistributionCenters"
+            }
+          }
+        }
+      }
+    }
+  }
+}

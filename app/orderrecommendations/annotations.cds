@@ -22,13 +22,14 @@ annotate service.OrderRecommendations with @(
     ],
 
     LineItem: [
-      { Value: store_ID,         Label: '점포',            ![@HTML5.CssDefaults]: { width: 'auto' } },
-      { Value: product_ID,       Label: '상품',            ![@HTML5.CssDefaults]: { width: 'auto' } },
-      { Value: supplier_ID,      Label: '공급업체',        ![@HTML5.CssDefaults]: { width: 'auto' } },
+      { Value: store.name,       Label: '점포',            ![@HTML5.CssDefaults]: { width: 'auto' } },
+      { Value: product.name,     Label: '상품',            ![@HTML5.CssDefaults]: { width: 'auto' } },
+      { Value: supplier.name,    Label: '공급업체',        ![@HTML5.CssDefaults]: { width: 'auto' } },
       { Value: recommendDate,    Label: '추천일',          ![@HTML5.CssDefaults]: { width: 'auto' } },
       { Value: currentStock,     Label: '현재고',          ![@UI.Importance]: #High, ![@HTML5.CssDefaults]: { width: 'auto' } },
       { Value: forecastDemand,   Label: '예측수요(7일)',   ![@HTML5.CssDefaults]: { width: 'auto' } },
       { Value: safetyStock,      Label: '안전재고',        ![@HTML5.CssDefaults]: { width: 'auto' } },
+      { Value: leadTime,         Label: '리드타임(일)',    ![@HTML5.CssDefaults]: { width: 'auto' } },
       { Value: recommendedQty,   Label: '추천발주량',      ![@UI.Importance]: #High, ![@HTML5.CssDefaults]: { width: 'auto' },
         Criticality: priority },
       { Value: estimatedCost,    Label: '예상비용',        ![@HTML5.CssDefaults]: { width: 'auto' } },
@@ -59,28 +60,28 @@ annotate service.OrderRecommendations with @(
         ID: 'RecommendationDetail',
         Label: '추천 상세',
         Facets: [
-          { $Type: 'UI.ReferenceFacet', Target: '@UI.FieldGroup#StockInfo', Label: '재고 현황' },
+          { $Type: 'UI.ReferenceFacet', Target: '@UI.FieldGroup#CalcBasis', Label: '📊 산출 근거' },
           { $Type: 'UI.ReferenceFacet', Target: '@UI.FieldGroup#OrderInfo', Label: '발주 정보' },
           { $Type: 'UI.ReferenceFacet', Target: '@UI.FieldGroup#StatusInfo', Label: '처리 상태' }
         ]
       }
     ],
 
-    FieldGroup#StockInfo: {
+    FieldGroup#CalcBasis: {
       Data: [
-        { Value: store_ID,       Label: '점포' },
-        { Value: product_ID,     Label: '상품' },
-        { Value: currentStock,   Label: '현재고' },
-        { Value: safetyStock,    Label: '안전재고' },
-        { Value: forecastDemand, Label: '예측 수요 (7일)' },
-        { Value: leadTime,       Label: '리드타임 (일)' }
+        { Value: store.name,     Label: '점포' },
+        { Value: product.name,   Label: '상품' },
+        { Value: currentStock,   Label: '① 현재 재고' },
+        { Value: forecastDemand, Label: '② 예측 수요 (7일)' },
+        { Value: safetyStock,    Label: '③ 안전 재고' },
+        { Value: leadTime,       Label: '④ 리드타임 (일)' },
+        { Value: recommendedQty, Label: '⑤ 추천 발주량 = ②+③-①' }
       ]
     },
 
     FieldGroup#OrderInfo: {
       Data: [
-        { Value: supplier_ID,     Label: '공급업체' },
-        { Value: recommendedQty,  Label: '추천 발주량' },
+        { Value: supplier.name,   Label: '공급업체' },
         { Value: estimatedCost,   Label: '예상 비용' },
         { Value: recommendDate,   Label: '추천일' }
       ]

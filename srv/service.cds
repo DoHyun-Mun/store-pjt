@@ -76,27 +76,6 @@ service InventoryService @(path: '/inventory') {
   };
 
   /**
-   * SupplyOrders - 공급/입출고 주문
-   */
-  @odata.draft.enabled
-  entity SupplyOrders as projection on db.SupplyOrders
-  actions {
-    /** 주문 확정: Draft → Confirmed */
-    action confirmOrder() returns SupplyOrders;
-    /** 출하: Confirmed → Shipped */
-    action shipOrder() returns SupplyOrders;
-    /** 배송 완료: Shipped → Delivered (재고 반영) */
-    action deliverOrder() returns SupplyOrders;
-    /** 주문 취소: Draft/Confirmed → Cancelled */
-    action cancelOrder(reason : String) returns SupplyOrders;
-  };
-
-  /**
-   * SupplyOrderItems - 공급 주문 상세 품목
-   */
-  entity SupplyOrderItems as projection on db.SupplyOrderItems;
-
-  /**
    * Customers - 고객 마스터
    */
   @odata.draft.enabled
@@ -118,13 +97,6 @@ service InventoryService @(path: '/inventory') {
    */
   @odata.draft.enabled
   entity DailySales as projection on db.DailySales;
-
-  /**
-   * InventorySnapshots - 재고 스냅샷 이력 (ML 재고 최적화 입력)
-   */
-  @odata.draft.enabled
-  entity InventorySnapshots as projection on db.InventorySnapshots;
-
   /**
    * DemandForecasts - 수요 예측 결과 (ML 출력)
    */
@@ -201,10 +173,6 @@ service InventoryService @(path: '/inventory') {
     name         @Search.defaultSearchElement;
   };
 
-  annotate SupplyOrders with {
-    orderNumber @Search.defaultSearchElement;
-  };
-
   annotate Customers with {
     customerCode   @Search.defaultSearchElement;
     name           @Search.defaultSearchElement;
@@ -234,4 +202,49 @@ service InventoryService @(path: '/inventory') {
     severity    @Search.defaultSearchElement;
     metricName  @Search.defaultSearchElement;
   };
+
+  // ═══════════════════════════════════════════════════════════════
+  // 유통 프로세스 엔티티 (물류센터 → 입고 → 검수 → 인보이스 → 배송 → 점포입고)
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * DistributionCenters - 물류센터
+   */
+  @odata.draft.enabled
+  entity DistributionCenters as projection on db.DistributionCenters;
+
+  /**
+   * InboundOrders - 입고오더 (공급업체 → 물류센터)
+   */
+  @odata.draft.enabled
+  entity InboundOrders as projection on db.InboundOrders;
+  entity InboundOrderItems as projection on db.InboundOrderItems;
+
+  /**
+   * GoodsReceipts - 입고검수
+   */
+  @odata.draft.enabled
+  entity GoodsReceipts as projection on db.GoodsReceipts;
+  entity GoodsReceiptItems as projection on db.GoodsReceiptItems;
+
+  /**
+   * Invoices - 인보이스/세금계산서
+   */
+  @odata.draft.enabled
+  entity Invoices as projection on db.Invoices;
+  entity InvoiceItems as projection on db.InvoiceItems;
+
+  /**
+   * TransferOrders - 배송지시 (물류센터 → 점포)
+   */
+  @odata.draft.enabled
+  entity TransferOrders as projection on db.TransferOrders;
+  entity TransferOrderItems as projection on db.TransferOrderItems;
+
+  /**
+   * StoreReceipts - 점포입고
+   */
+  @odata.draft.enabled
+  entity StoreReceipts as projection on db.StoreReceipts;
+  entity StoreReceiptItems as projection on db.StoreReceiptItems;
 }

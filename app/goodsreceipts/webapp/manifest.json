@@ -1,0 +1,122 @@
+{
+  "_version": "1.73.1",
+  "sap.app": {
+    "id": "goodsreceipts",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "dataSources": {
+      "mainService": {
+        "uri": "/inventory/",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": true,
+    "dependencies": {
+      "minUI5Version": "1.136.7",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {},
+        "sap.f": {}
+      }
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "goodsreceipts.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "preload": true,
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        }
+      }
+    },
+    "routing": {
+      "config": {
+        "flexibleColumnLayout": {
+          "defaultTwoColumnLayoutType": "TwoColumnsMidExpanded"
+        },
+        "routerClass": "sap.f.routing.Router"
+      },
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "GoodsReceiptsList",
+          "target": ["GoodsReceiptsList"]
+        },
+        {
+          "pattern": "GoodsReceipts({key}):?query:",
+          "name": "GoodsReceiptsObjectPage",
+          "target": ["GoodsReceiptsList", "GoodsReceiptsObjectPage"]
+        }
+      ],
+      "targets": {
+        "GoodsReceiptsList": {
+          "type": "Component",
+          "id": "GoodsReceiptsList",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/GoodsReceipts",
+              "variantManagement": "Page",
+              "navigation": {
+                "GoodsReceipts": {
+                  "detail": {
+                    "route": "GoodsReceiptsObjectPage"
+                  }
+                }
+              },
+              "initialLoad": "Enabled"
+            }
+          },
+          "controlAggregation": "beginColumnPages",
+          "contextPattern": ""
+        },
+        "GoodsReceiptsObjectPage": {
+          "type": "Component",
+          "id": "GoodsReceiptsObjectPage",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "editableHeaderContent": false,
+              "contextPath": "/GoodsReceipts"
+            }
+          },
+          "controlAggregation": "midColumnPages",
+          "contextPattern": "/GoodsReceipts({key})"
+        }
+      }
+    },
+    "rootView": {
+      "viewName": "sap.fe.templates.RootContainer.view.Fcl",
+      "type": "XML",
+      "async": true,
+      "id": "appRootView"
+    }
+  }
+}

@@ -138,7 +138,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:#F5F6FA;color:#1D2D
 <div class="grid">
 <div><label>점포</label><select id="poStore"></select></div>
 <div><label>상품</label><select id="poProduct"></select></div>
-<div><label>발주 수량</label><input id="poQty" type="number"/></div>
+<div><label>발주 수량</label><input id="poQty" type="number"/><div id="qtyBasis" style="margin-top:0.3rem;font-size:0.65rem;color:#E37400;background:#FFF8F0;padding:0.4rem 0.6rem;border-radius:4px;display:none;"></div></div>
 <div><label>단가 (₩)</label><input id="poPrice" type="number" value="20000"/></div>
 </div>
 <div style="display:flex;gap:0.6rem">
@@ -157,7 +157,19 @@ function viewInventory() {
 function showPOForm() {
     var f = document.getElementById("poForm"); f.style.display = "block"; loadOpts();
     var raw = localStorage.getItem("orderRecommendationData");
-    if (raw) { var d = JSON.parse(raw); document.getElementById("poQty").value = d.ml ? d.ml.recommendedQty : 10; setTimeout(function(){ var ss=document.getElementById("poStore"); for(var i=0;i<ss.options.length;i++){if(ss.options[i].text.indexOf(d.storeName||"")!==-1){ss.selectedIndex=i;break;}} },300); }
+    if (raw) { var d = JSON.parse(raw); var recQty = d.ml ? d.ml.recommendedQty : 10; document.getElementById("poQty").value = recQty;
+    // Show calculation basis
+    var basisDiv = document.getElementById("qtyBasis");
+    if (basisDiv && d.ml) {
+      var parts = [];
+      if (d.timeseries && d.timeseries.avg7d) parts.push("일평귀 수요: " + d.timeseries.avg7d.toFixed(1) + "개/일");
+      if (d.rpt && d.rpt.totalDemand7d) parts.push("7일 예측 합계: " + d.rpt.totalDemand7d.toFixed(1) + "개");
+      if (d.ml.currentStock) parts.push("현재 재고: " + d.ml.currentStock + "개");
+      if (d.ml.urgency) parts.push("긴급도: " + d.ml.urgency);
+      basisDiv.innerHTML = "📈 <b>산출 균거:</b> " + (d.ml.model || "ML") + "<br><span style='color:#556B82;'>" + parts.join(" | ") + "<br>추천 발주량 = " + recQty + "개</span>";
+      basisDiv.style.display = "block";
+    }
+    setTimeout(function(){ var ss=document.getElementById("poStore"); for(var i=0;i<ss.options.length;i++){if(ss.options[i].text.indexOf(d.storeName||"")!==-1){ss.selectedIndex=i;break;}} },300); }
     f.scrollIntoView({behavior:"smooth"});
 }
 async function loadOpts() {

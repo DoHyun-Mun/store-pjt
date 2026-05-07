@@ -1,0 +1,6 @@
+ID,dcCode,name,address,city,postalCode,country,phone,email,manager,capacity,currentStock,dcType,isActive,description,createdAt,createdBy,modifiedAt,modifiedBy
+e1000001-0001-4000-8000-000000000001,DC-CENTRAL,중앙물류센터,경기도 이천시 물류단지,경기도 이천시,26404,대한민국,02-9411-7204,dc1@inventory.co.kr,물류담당1,50000,7556,CENTRAL,true,중앙물류센터,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+e1000001-0002-4000-8000-000000000002,DC-SEOUL,수도권물류센터,경기도 안성시 물류단지,경기도 안성시,95555,대한민국,02-3430-2098,dc2@inventory.co.kr,물류담당2,30000,12970,REGIONAL,true,수도권물류센터,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+e1000001-0003-4000-8000-000000000003,DC-BUSAN,부산물류센터,부산 강서구 물류단지,부산 강서구,73465,대한민국,02-8499-3855,dc3@inventory.co.kr,물류담당3,20000,10574,REGIONAL,true,부산물류센터,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+e1000001-0004-4000-8000-000000000004,DC-COLD,저온물류센터,경기도 용인시 물류단지,경기도 용인시,54205,대한민국,02-7638-7699,dc4@inventory.co.kr,물류담당4,10000,5767,COLD,true,저온물류센터,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin
+e1000001-0005-4000-8000-000000000005,DC-DAEGU,대구물류센터,대구 달성군 물류단지,대구 달성군,46486,대한민국,02-6076-1788,dc5@inventory.co.kr,물류담당5,15000,12544,REGIONAL,true,대구물류센터,2024-01-01T00:00:00Z,admin,2024-01-01T00:00:00Z,admin

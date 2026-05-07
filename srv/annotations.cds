@@ -394,12 +394,6 @@ annotate service.Stores with @(
       ID     : 'InventoriesList',
       Label  : '재고 현황',
       Target : 'inventories/@UI.LineItem'
-    },
-    {
-      $Type  : 'UI.ReferenceFacet',
-      ID     : 'SupplyOrdersList',
-      Label  : '공급 주문',
-      Target : 'supplyOrders/@UI.LineItem'
     }
   ],
 
@@ -499,12 +493,6 @@ annotate service.Suppliers with @(
       ID     : 'MaterialsList',
       Label  : '공급 자재',
       Target : 'materials/@UI.LineItem'
-    },
-    {
-      $Type  : 'UI.ReferenceFacet',
-      ID     : 'SupplyOrdersList',
-      Label  : '공급 주문 내역',
-      Target : 'supplyOrders/@UI.LineItem'
     }
   ],
 
@@ -868,11 +856,12 @@ annotate service.PurchaseOrders with @(
     Description    : { $Type: 'UI.DataField', Value: product.name }
   },
 
-  UI.SelectionFields : [ poNumber, product_ID, store_ID, supplier_ID, status, requestedBy ],
+  UI.SelectionFields : [ poNumber, product_ID, dc_ID, store_ID, supplier_ID, status, requestedBy ],
 
   UI.LineItem : [
     { $Type: 'UI.DataField', Value: poNumber,        Label: '발주 번호', ![@HTML5.CssDefaults]: { width: 'auto' } },
     { $Type: 'UI.DataField', Value: product.name,    Label: '상품명', ![@HTML5.CssDefaults]: { width: 'auto' } },
+    { $Type: 'UI.DataField', Value: dc.name,         Label: '물류센터(DC)', ![@HTML5.CssDefaults]: { width: 'auto' } },
     { $Type: 'UI.DataField', Value: store.name,      Label: '점포', ![@HTML5.CssDefaults]: { width: 'auto' } },
     { $Type: 'UI.DataField', Value: supplier.name,   Label: '공급업체', ![@HTML5.CssDefaults]: { width: 'auto' } },
     { $Type: 'UI.DataField', Value: quantity,         Label: '수량', ![@HTML5.CssDefaults]: { width: 'auto' } },
@@ -909,6 +898,7 @@ annotate service.PurchaseOrders with @(
     Data  : [
       { $Type: 'UI.DataField', Value: poNumber,     Label: '발주 번호' },
       { $Type: 'UI.DataField', Value: product_ID,   Label: '상품' },
+      { $Type: 'UI.DataField', Value: dc_ID,        Label: '물류센터(DC)' },
       { $Type: 'UI.DataField', Value: store_ID,     Label: '점포' },
       { $Type: 'UI.DataField', Value: supplier_ID,  Label: '공급업체' },
       { $Type: 'UI.DataField', Value: quantity,      Label: '수량' },
@@ -1054,620 +1044,96 @@ annotate service.PurchaseOrders with {
 };
 
 // ═══════════════════════════════════════════════════════════════════════
-// SupplyOrders - 공급/입출고 주문 (List Report + Object Page)
-// ═══════════════════════════════════════════════════════════════════════
-
-annotate service.SupplyOrders with @(
-  UI.HeaderInfo : {
-    TypeName       : '공급 주문',
-    TypeNamePlural : '공급 주문 목록',
-    Title          : { $Type: 'UI.DataField', Value: orderNumber },
-    Description    : { $Type: 'UI.DataField', Value: store.name }
-  },
-
-  UI.SelectionFields : [ orderNumber, store_ID, supplier_ID, orderType, status ],
-
-  UI.LineItem : [
-    { $Type: 'UI.DataField', Value: orderNumber,     Label: '주문 번호', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: store.name,      Label: '점포', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: supplier.name,   Label: '공급업체', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: orderType,       Label: '주문 유형', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: status,          Label: '상태', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: orderDate,       Label: '주문일', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: expectedDate,    Label: '예정일', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: totalAmount,     Label: '합계 금액', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: requestedBy,     Label: '요청자', ![@HTML5.CssDefaults]: { width: 'auto' } }
-  ],
-
-  UI.Facets : [
-    {
-      $Type  : 'UI.ReferenceFacet',
-      ID     : 'OrderInfo',
-      Label  : '주문 정보',
-      Target : '@UI.FieldGroup#OrderInfo'
-    },
-    {
-      $Type  : 'UI.ReferenceFacet',
-      ID     : 'DateInfo',
-      Label  : '일정 정보',
-      Target : '@UI.FieldGroup#DateInfo'
-    },
-    {
-      $Type  : 'UI.ReferenceFacet',
-      ID     : 'ItemsList',
-      Label  : '주문 품목',
-      Target : 'items/@UI.LineItem'
-    }
-  ],
-
-  UI.FieldGroup #OrderInfo : {
-    $Type : 'UI.FieldGroupType',
-    Data  : [
-      { $Type: 'UI.DataField', Value: orderNumber,  Label: '주문 번호' },
-      { $Type: 'UI.DataField', Value: store_ID,     Label: '점포' },
-      { $Type: 'UI.DataField', Value: supplier_ID,  Label: '공급업체' },
-      { $Type: 'UI.DataField', Value: orderType,    Label: '주문 유형' },
-      { $Type: 'UI.DataField', Value: status,       Label: '상태' },
-      { $Type: 'UI.DataField', Value: totalAmount,  Label: '합계 금액' },
-      { $Type: 'UI.DataField', Value: requestedBy,  Label: '요청자' },
-      { $Type: 'UI.DataField', Value: note,         Label: '비고' }
-    ]
-  },
-
-  UI.FieldGroup #DateInfo : {
-    $Type : 'UI.FieldGroupType',
-    Data  : [
-      { $Type: 'UI.DataField', Value: orderDate,     Label: '주문일' },
-      { $Type: 'UI.DataField', Value: expectedDate,   Label: '예정일' },
-      { $Type: 'UI.DataField', Value: deliveredDate,   Label: '배송 완료일' }
-    ]
-  },
-
-  // Custom Actions for SupplyOrder workflow
-  UI.Identification : [
-    {
-      $Type  : 'UI.DataFieldForAction',
-      Action : 'InventoryService.confirmOrder',
-      Label  : '주문 확정'
-    },
-    {
-      $Type  : 'UI.DataFieldForAction',
-      Action : 'InventoryService.shipOrder',
-      Label  : '출하'
-    },
-    {
-      $Type  : 'UI.DataFieldForAction',
-      Action : 'InventoryService.deliverOrder',
-      Label  : '배송 완료'
-    },
-    {
-      $Type  : 'UI.DataFieldForAction',
-      Action : 'InventoryService.cancelOrder',
-      Label  : '주문 취소'
-    }
-  ],
-
-  Capabilities : {
-    InsertRestrictions : { Insertable: true },
-    UpdateRestrictions : { Updatable:  true },
-    DeleteRestrictions : { Deletable:  true }
-  }
-);
-
-annotate service.SupplyOrders with {
-  orderNumber   @title: '주문 번호'   @readonly;
-  orderType     @title: '주문 유형';
-  status        @title: '상태'       @readonly;
-  orderDate     @title: '주문일';
-  expectedDate  @title: '예정일';
-  deliveredDate @title: '배송 완료일'  @readonly;
-  totalAmount   @title: '합계 금액'   @readonly;
-  requestedBy   @title: '요청자';
-  note          @title: '비고';
-  store         @(
-    title: '점포',
-    Common.Text: store.name,
-    Common.TextArrangement: #TextFirst,
-    Common.ValueList : {
-      $Type          : 'Common.ValueListType',
-      CollectionPath : 'Stores',
-      Parameters     : [
-        {
-          $Type             : 'Common.ValueListParameterInOut',
-          LocalDataProperty : store_ID,
-          ValueListProperty : 'ID'
-        },
-        {
-          $Type             : 'Common.ValueListParameterDisplayOnly',
-          ValueListProperty : 'storeCode'
-        },
-        {
-          $Type             : 'Common.ValueListParameterDisplayOnly',
-          ValueListProperty : 'name'
-        }
-      ]
-    }
-  );
-  supplier      @(
-    title: '공급업체',
-    Common.Text: supplier.name,
-    Common.TextArrangement: #TextFirst,
-    Common.ValueList : {
-      $Type          : 'Common.ValueListType',
-      CollectionPath : 'Suppliers',
-      Parameters     : [
-        {
-          $Type             : 'Common.ValueListParameterInOut',
-          LocalDataProperty : supplier_ID,
-          ValueListProperty : 'ID'
-        },
-        {
-          $Type             : 'Common.ValueListParameterDisplayOnly',
-          ValueListProperty : 'supplierCode'
-        },
-        {
-          $Type             : 'Common.ValueListParameterDisplayOnly',
-          ValueListProperty : 'name'
-        }
-      ]
-    }
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════════
-// SupplyOrderItems - 공급 주문 품목 (List + Object Page)
-// ═══════════════════════════════════════════════════════════════════════
-
-annotate service.SupplyOrderItems with @(
-  UI.HeaderInfo : {
-    TypeName       : '주문 품목',
-    TypeNamePlural : '주문 품목 목록',
-    Title          : { $Type: 'UI.DataField', Value: product.name }
-  },
-
-  UI.LineItem : [
-    { $Type: 'UI.DataField', Value: product.name,   Label: '상품', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: material.name,  Label: '자재', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: quantity,        Label: '수량', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: unitPrice,       Label: '단가', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: totalPrice,      Label: '합계', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: note,            Label: '비고', ![@HTML5.CssDefaults]: { width: 'auto' } }
-  ],
-
-  UI.Facets : [
-    {
-      $Type  : 'UI.ReferenceFacet',
-      ID     : 'ItemInfo',
-      Label  : '품목 정보',
-      Target : '@UI.FieldGroup#ItemInfo'
-    }
-  ],
-
-  UI.FieldGroup #ItemInfo : {
-    $Type : 'UI.FieldGroupType',
-    Data  : [
-      { $Type: 'UI.DataField', Value: product_ID,   Label: '상품' },
-      { $Type: 'UI.DataField', Value: material_ID,  Label: '자재' },
-      { $Type: 'UI.DataField', Value: quantity,      Label: '수량' },
-      { $Type: 'UI.DataField', Value: unitPrice,     Label: '단가' },
-      { $Type: 'UI.DataField', Value: totalPrice,    Label: '합계' },
-      { $Type: 'UI.DataField', Value: note,          Label: '비고' }
-    ]
-  },
-
-  Capabilities : {
-    InsertRestrictions : { Insertable: true },
-    UpdateRestrictions : { Updatable:  true },
-    DeleteRestrictions : { Deletable:  true }
-  }
-);
-
-annotate service.SupplyOrderItems with {
-  quantity   @title: '수량';
-  unitPrice  @title: '단가';
-  totalPrice @title: '합계'    @readonly;
-  note       @title: '비고';
-  product    @(
-    title: '상품',
-    Common.Text: product.name,
-    Common.TextArrangement: #TextFirst
-  );
-  material   @(
-    title: '자재',
-    Common.Text: material.name,
-    Common.TextArrangement: #TextFirst
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════════
 // Customers - 고객 마스터
 // ═══════════════════════════════════════════════════════════════════════
-
 annotate service.Customers with @(
-  UI.HeaderInfo : {
-    TypeName       : '고객',
-    TypeNamePlural : '고객 목록',
-    Title          : { $Type: 'UI.DataField', Value: customerCode },
-    Description    : { $Type: 'UI.DataField', Value: name }
-  },
-
-  UI.SelectionFields : [ customerCode, name, membershipType, city, isActive ],
-
+  UI.HeaderInfo : { TypeName: '고객', TypeNamePlural: '고객 목록', Title: {$Type:'UI.DataField',Value:customerCode}, Description: {$Type:'UI.DataField',Value:name} },
+  UI.SelectionFields : [ customerCode, name, city, membershipType, isActive ],
   UI.LineItem : [
-    { $Type: 'UI.DataField', Value: customerCode,        Label: '고객 번호', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: name,                Label: '고객명', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: phone,               Label: '연락처', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: email,               Label: '이메일', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: gender,              Label: '성별', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: ageGroup,            Label: '연령대', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: membershipType,      Label: '등급', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: city,                Label: '도시', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: totalPurchaseAmount, Label: '누적 구매액', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: visitCount,          Label: '방문 횟수', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: lastVisitDate,       Label: '최근 방문일', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: isActive,            Label: '활성', ![@HTML5.CssDefaults]: { width: 'auto' } }
+    {$Type:'UI.DataField', Value:customerCode, Label:'고객코드', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:name, Label:'이름', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:phone, Label:'전화번호', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:email, Label:'이메일', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:membershipType, Label:'멤버십', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:city, Label:'도시', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:totalPurchaseAmount, Label:'총구매액', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:visitCount, Label:'방문수', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:isActive, Label:'활성', ![@HTML5.CssDefaults]:{width:'auto'}}
   ],
-
   UI.Facets : [
-    { $Type: 'UI.ReferenceFacet', ID: 'BasicInfo',    Label: '기본 정보',    Target: '@UI.FieldGroup#BasicInfo' },
-    { $Type: 'UI.ReferenceFacet', ID: 'ContactInfo',  Label: '연락처 정보',  Target: '@UI.FieldGroup#ContactInfo' },
-    { $Type: 'UI.ReferenceFacet', ID: 'StatsInfo',    Label: '구매 통계',    Target: '@UI.FieldGroup#StatsInfo' },
-    { $Type: 'UI.ReferenceFacet', ID: 'PurchaseList', Label: '구매 이력',    Target: 'purchases/@UI.LineItem' }
+    {$Type:'UI.ReferenceFacet', ID:'BasicInfo', Label:'기본 정보', Target:'@UI.FieldGroup#BasicInfo'},
+    {$Type:'UI.ReferenceFacet', ID:'Purchases', Label:'구매 이력', Target:'purchases/@UI.LineItem'}
   ],
-
-  UI.FieldGroup #BasicInfo : {
-    $Type : 'UI.FieldGroupType',
-    Data  : [
-      { $Type: 'UI.DataField', Value: customerCode,   Label: '고객 번호' },
-      { $Type: 'UI.DataField', Value: name,            Label: '고객명' },
-      { $Type: 'UI.DataField', Value: gender,          Label: '성별' },
-      { $Type: 'UI.DataField', Value: birthDate,       Label: '생년월일' },
-      { $Type: 'UI.DataField', Value: ageGroup,        Label: '연령대' },
-      { $Type: 'UI.DataField', Value: membershipType,  Label: '등급' },
-      { $Type: 'UI.DataField', Value: registeredAt,    Label: '가입일' },
-      { $Type: 'UI.DataField', Value: preferredStore_ID, Label: '주거래 점포' },
-      { $Type: 'UI.DataField', Value: isActive,        Label: '활성' }
-    ]
-  },
-
-  UI.FieldGroup #ContactInfo : {
-    $Type : 'UI.FieldGroupType',
-    Data  : [
-      { $Type: 'UI.DataField', Value: phone,      Label: '연락처' },
-      { $Type: 'UI.DataField', Value: email,      Label: '이메일' },
-      { $Type: 'UI.DataField', Value: address,    Label: '주소' },
-      { $Type: 'UI.DataField', Value: city,       Label: '도시' },
-      { $Type: 'UI.DataField', Value: postalCode, Label: '우편번호' }
-    ]
-  },
-
-  UI.FieldGroup #StatsInfo : {
-    $Type : 'UI.FieldGroupType',
-    Data  : [
-      { $Type: 'UI.DataField', Value: totalPurchaseAmount, Label: '누적 구매액' },
-      { $Type: 'UI.DataField', Value: visitCount,          Label: '방문 횟수' },
-      { $Type: 'UI.DataField', Value: lastVisitDate,       Label: '최근 방문일' }
-    ]
-  }
+  UI.FieldGroup #BasicInfo : {$Type:'UI.FieldGroupType', Data:[
+    {$Type:'UI.DataField', Value:customerCode, Label:'고객코드'}, {$Type:'UI.DataField', Value:name, Label:'이름'},
+    {$Type:'UI.DataField', Value:phone, Label:'전화번호'}, {$Type:'UI.DataField', Value:email, Label:'이메일'},
+    {$Type:'UI.DataField', Value:gender, Label:'성별'}, {$Type:'UI.DataField', Value:ageGroup, Label:'연령대'},
+    {$Type:'UI.DataField', Value:membershipType, Label:'멤버십'}, {$Type:'UI.DataField', Value:city, Label:'도시'},
+    {$Type:'UI.DataField', Value:totalPurchaseAmount, Label:'총구매액'}, {$Type:'UI.DataField', Value:visitCount, Label:'방문수'},
+    {$Type:'UI.DataField', Value:lastVisitDate, Label:'최근방문일'}, {$Type:'UI.DataField', Value:isActive, Label:'활성'}
+  ]},
+  UI.PresentationVariant : {SortOrder:[{Property:name}], Visualizations:['@UI.LineItem']},
+  Capabilities : {InsertRestrictions:{Insertable:true}, UpdateRestrictions:{Updatable:true}, DeleteRestrictions:{Deletable:true}}
 );
-
-annotate service.Customers with {
-  customerCode        @title: '고객 번호';
-  name                @title: '고객명';
-  phone               @title: '연락처';
-  email               @title: '이메일';
-  gender              @title: '성별';
-  birthDate           @title: '생년월일';
-  ageGroup            @title: '연령대';
-  address             @title: '주소';
-  city                @title: '도시';
-  postalCode          @title: '우편번호';
-  membershipType      @title: '등급';
-  registeredAt        @title: '가입일';
-  isActive            @title: '활성';
-  totalPurchaseAmount @title: '누적 구매액' @readonly;
-  visitCount          @title: '방문 횟수'   @readonly;
-  lastVisitDate       @title: '최근 방문일'  @readonly;
-  preferredStore      @(
-    title: '주거래 점포',
-    Common.Text: preferredStore.name,
-    Common.TextArrangement: #TextFirst,
-    Common.ValueList : {
-      $Type          : 'Common.ValueListType',
-      CollectionPath : 'Stores',
-      Parameters     : [
-        { $Type: 'Common.ValueListParameterInOut', LocalDataProperty: preferredStore_ID, ValueListProperty: 'ID' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'storeCode' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'name' }
-      ]
-    }
-  );
-};
+annotate service.Customers with { customerCode @title:'고객코드'; name @title:'이름'; membershipType @title:'멤버십'; city @title:'도시'; };
 
 // ═══════════════════════════════════════════════════════════════════════
 // CustomerPurchases - 고객 구매 이력
 // ═══════════════════════════════════════════════════════════════════════
-
 annotate service.CustomerPurchases with @(
-  UI.HeaderInfo : {
-    TypeName       : '구매',
-    TypeNamePlural : '구매 이력',
-    Title          : { $Type: 'UI.DataField', Value: purchaseNumber },
-    Description    : { $Type: 'UI.DataField', Value: customer.name }
-  },
-
-  UI.SelectionFields : [ purchaseNumber, customer_ID, store_ID, paymentMethod ],
-
+  UI.HeaderInfo : { TypeName: '구매', TypeNamePlural: '구매 이력', Title: {$Type:'UI.DataField',Value:purchaseNumber}, Description: {$Type:'UI.DataField',Value:customer.name} },
+  UI.SelectionFields : [ purchaseNumber, customer_ID, store_ID, purchaseDate, paymentMethod ],
   UI.LineItem : [
-    { $Type: 'UI.DataField', Value: purchaseNumber,   Label: '구매 번호', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: customer.name,    Label: '고객', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: store.name,       Label: '점포', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: purchaseDate,     Label: '구매일시', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: totalAmount,      Label: '합계 금액', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: paymentMethod,    Label: '결제 수단', ![@HTML5.CssDefaults]: { width: 'auto' } }
+    {$Type:'UI.DataField', Value:purchaseNumber, Label:'구매번호', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:customer.name, Label:'고객', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:store.name, Label:'점포', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:purchaseDate, Label:'구매일시', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:totalAmount, Label:'합계', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:paymentMethod, Label:'결제방법', ![@HTML5.CssDefaults]:{width:'auto'}}
   ],
-
   UI.Facets : [
-    { $Type: 'UI.ReferenceFacet', ID: 'PurchaseInfo', Label: '구매 정보',   Target: '@UI.FieldGroup#PurchaseInfo' },
-    { $Type: 'UI.ReferenceFacet', ID: 'ItemsList',    Label: '구매 품목',   Target: 'items/@UI.LineItem' }
+    {$Type:'UI.ReferenceFacet', ID:'BasicInfo', Label:'구매 정보', Target:'@UI.FieldGroup#BasicInfo'},
+    {$Type:'UI.ReferenceFacet', ID:'Items', Label:'구매 품목', Target:'items/@UI.LineItem'}
   ],
-
-  UI.FieldGroup #PurchaseInfo : {
-    $Type : 'UI.FieldGroupType',
-    Data  : [
-      { $Type: 'UI.DataField', Value: purchaseNumber, Label: '구매 번호' },
-      { $Type: 'UI.DataField', Value: customer_ID,    Label: '고객' },
-      { $Type: 'UI.DataField', Value: store_ID,       Label: '점포' },
-      { $Type: 'UI.DataField', Value: purchaseDate,   Label: '구매일시' },
-      { $Type: 'UI.DataField', Value: totalAmount,    Label: '합계 금액' },
-      { $Type: 'UI.DataField', Value: paymentMethod,  Label: '결제 수단' },
-      { $Type: 'UI.DataField', Value: note,           Label: '비고' }
-    ]
-  }
+  UI.FieldGroup #BasicInfo : {$Type:'UI.FieldGroupType', Data:[
+    {$Type:'UI.DataField', Value:purchaseNumber, Label:'구매번호'}, {$Type:'UI.DataField', Value:customer_ID, Label:'고객'},
+    {$Type:'UI.DataField', Value:store_ID, Label:'점포'}, {$Type:'UI.DataField', Value:purchaseDate, Label:'구매일시'},
+    {$Type:'UI.DataField', Value:totalAmount, Label:'합계'}, {$Type:'UI.DataField', Value:paymentMethod, Label:'결제방법'},
+    {$Type:'UI.DataField', Value:note, Label:'비고'}
+  ]},
+  UI.PresentationVariant : {SortOrder:[{Property:purchaseDate, Descending:true}], Visualizations:['@UI.LineItem']},
+  Capabilities : {InsertRestrictions:{Insertable:true}, UpdateRestrictions:{Updatable:true}, DeleteRestrictions:{Deletable:true}}
 );
-
-annotate service.CustomerPurchases with {
-  purchaseNumber @title: '구매 번호'  @readonly;
-  purchaseDate   @title: '구매일시';
-  totalAmount    @title: '합계 금액'  @readonly;
-  paymentMethod  @title: '결제 수단';
-  note           @title: '비고';
-  customer       @(
-    title: '고객',
-    Common.Text: customer.name,
-    Common.TextArrangement: #TextFirst,
-    Common.ValueList : {
-      $Type          : 'Common.ValueListType',
-      CollectionPath : 'Customers',
-      Parameters     : [
-        { $Type: 'Common.ValueListParameterInOut', LocalDataProperty: customer_ID, ValueListProperty: 'ID' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'customerCode' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'name' }
-      ]
-    }
-  );
-  store          @(
-    title: '점포',
-    Common.Text: store.name,
-    Common.TextArrangement: #TextFirst,
-    Common.ValueList : {
-      $Type          : 'Common.ValueListType',
-      CollectionPath : 'Stores',
-      Parameters     : [
-        { $Type: 'Common.ValueListParameterInOut', LocalDataProperty: store_ID, ValueListProperty: 'ID' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'storeCode' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'name' }
-      ]
-    }
-  );
-};
+annotate service.CustomerPurchaseItems with @(UI.LineItem:[
+  {$Type:'UI.DataField', Value:product.productCode, Label:'상품코드'}, {$Type:'UI.DataField', Value:product.name, Label:'상품명'}, {$Type:'UI.DataField', Value:quantity, Label:'수량'},
+  {$Type:'UI.DataField', Value:unitPrice, Label:'단가'}, {$Type:'UI.DataField', Value:totalPrice, Label:'금액'},
+  {$Type:'UI.DataField', Value:discount, Label:'할인'}
+]);
 
 // ═══════════════════════════════════════════════════════════════════════
-// CustomerPurchaseItems - 구매 상세 품목
+// DailySales - 일별 매출
 // ═══════════════════════════════════════════════════════════════════════
-
-annotate service.CustomerPurchaseItems with @(
-  UI.HeaderInfo : {
-    TypeName       : '구매 품목',
-    TypeNamePlural : '구매 품목 목록',
-    Title          : { $Type: 'UI.DataField', Value: product.name }
-  },
-
-  UI.LineItem : [
-    { $Type: 'UI.DataField', Value: product.name,  Label: '상품', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: quantity,       Label: '수량', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: unitPrice,      Label: '단가', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: discount,       Label: '할인', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: totalPrice,     Label: '합계', ![@HTML5.CssDefaults]: { width: 'auto' } }
-  ],
-
-  UI.Facets : [
-    { $Type: 'UI.ReferenceFacet', ID: 'ItemInfo', Label: '품목 정보', Target: '@UI.FieldGroup#ItemInfo' }
-  ],
-
-  UI.FieldGroup #ItemInfo : {
-    $Type : 'UI.FieldGroupType',
-    Data  : [
-      { $Type: 'UI.DataField', Value: product_ID,  Label: '상품' },
-      { $Type: 'UI.DataField', Value: quantity,     Label: '수량' },
-      { $Type: 'UI.DataField', Value: unitPrice,    Label: '단가' },
-      { $Type: 'UI.DataField', Value: discount,     Label: '할인' },
-      { $Type: 'UI.DataField', Value: totalPrice,   Label: '합계' }
-    ]
-  }
-);
-
-annotate service.CustomerPurchaseItems with {
-  quantity   @title: '수량';
-  unitPrice  @title: '단가';
-  totalPrice @title: '합계'  @readonly;
-  discount   @title: '할인';
-  product    @(
-    title: '상품',
-    Common.Text: product.name,
-    Common.TextArrangement: #TextFirst
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════════
-// DailySales - 일별 매출 집계 (ML 수요 예측 입력)
-// ═══════════════════════════════════════════════════════════════════════
-
 annotate service.DailySales with @(
-  UI.HeaderInfo : {
-    TypeName       : '일별 매출',
-    TypeNamePlural : '일별 매출 집계',
-    Title          : { $Type: 'UI.DataField', Value: salesDate },
-    Description    : { $Type: 'UI.DataField', Value: store.name }
-  },
-
+  UI.HeaderInfo : { TypeName: '일별매출', TypeNamePlural: '일별 매출 목록', Title: {$Type:'UI.DataField',Value:salesDate}, Description: {$Type:'UI.DataField',Value:store.name} },
   UI.SelectionFields : [ store_ID, product_ID, salesDate ],
-
   UI.LineItem : [
-    { $Type: 'UI.DataField', Value: salesDate,      Label: '매출일', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: store.name,     Label: '점포', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: product.name,   Label: '상품', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: quantity,        Label: '판매 수량', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: revenue,         Label: '매출액', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: costAmount,      Label: '원가', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: profit,          Label: '이익', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: customerCount,   Label: '고객 수', ![@HTML5.CssDefaults]: { width: 'auto' } }
+    {$Type:'UI.DataField', Value:salesDate, Label:'매출일', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:store.name, Label:'점포', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:product.name, Label:'상품', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:quantity, Label:'수량', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:revenue, Label:'매출액', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:costAmount, Label:'원가', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:profit, Label:'이익', ![@HTML5.CssDefaults]:{width:'auto'}},
+    {$Type:'UI.DataField', Value:customerCount, Label:'고객수', ![@HTML5.CssDefaults]:{width:'auto'}}
   ],
-
-  UI.Facets : [
-    { $Type: 'UI.ReferenceFacet', ID: 'SalesInfo', Label: '매출 정보', Target: '@UI.FieldGroup#SalesInfo' }
-  ],
-
-  UI.FieldGroup #SalesInfo : {
-    $Type : 'UI.FieldGroupType',
-    Data  : [
-      { $Type: 'UI.DataField', Value: salesDate,     Label: '매출일' },
-      { $Type: 'UI.DataField', Value: store_ID,      Label: '점포' },
-      { $Type: 'UI.DataField', Value: product_ID,    Label: '상품' },
-      { $Type: 'UI.DataField', Value: quantity,       Label: '판매 수량' },
-      { $Type: 'UI.DataField', Value: revenue,        Label: '매출액' },
-      { $Type: 'UI.DataField', Value: costAmount,     Label: '원가' },
-      { $Type: 'UI.DataField', Value: profit,         Label: '이익' },
-      { $Type: 'UI.DataField', Value: customerCount,  Label: '고객 수' }
-    ]
-  }
+  UI.Facets : [{$Type:'UI.ReferenceFacet', ID:'BasicInfo', Label:'매출 상세', Target:'@UI.FieldGroup#BasicInfo'}],
+  UI.FieldGroup #BasicInfo : {$Type:'UI.FieldGroupType', Data:[
+    {$Type:'UI.DataField', Value:salesDate, Label:'매출일'}, {$Type:'UI.DataField', Value:store_ID, Label:'점포'},
+    {$Type:'UI.DataField', Value:product_ID, Label:'상품'}, {$Type:'UI.DataField', Value:quantity, Label:'수량'},
+    {$Type:'UI.DataField', Value:revenue, Label:'매출액'}, {$Type:'UI.DataField', Value:costAmount, Label:'원가'},
+    {$Type:'UI.DataField', Value:profit, Label:'이익'}, {$Type:'UI.DataField', Value:customerCount, Label:'고객수'}
+  ]},
+  UI.PresentationVariant : {SortOrder:[{Property:salesDate, Descending:true}], Visualizations:['@UI.LineItem']},
+  Capabilities : {InsertRestrictions:{Insertable:true}, UpdateRestrictions:{Updatable:true}, DeleteRestrictions:{Deletable:true}}
 );
-
-annotate service.DailySales with {
-  salesDate     @title: '매출일';
-  quantity      @title: '판매 수량';
-  revenue       @title: '매출액';
-  costAmount    @title: '원가';
-  profit        @title: '이익';
-  customerCount @title: '고객 수';
-  store         @(
-    title: '점포',
-    Common.Text: store.name,
-    Common.TextArrangement: #TextFirst,
-    Common.ValueList : {
-      $Type          : 'Common.ValueListType',
-      CollectionPath : 'Stores',
-      Parameters     : [
-        { $Type: 'Common.ValueListParameterInOut', LocalDataProperty: store_ID, ValueListProperty: 'ID' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'storeCode' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'name' }
-      ]
-    }
-  );
-  product       @(
-    title: '상품',
-    Common.Text: product.name,
-    Common.TextArrangement: #TextFirst,
-    Common.ValueList : {
-      $Type          : 'Common.ValueListType',
-      CollectionPath : 'Products',
-      Parameters     : [
-        { $Type: 'Common.ValueListParameterInOut', LocalDataProperty: product_ID, ValueListProperty: 'ID' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'productCode' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'name' }
-      ]
-    }
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════════
-// InventorySnapshots - 재고 스냅샷 이력 (ML 재고 최적화 입력)
-// ═══════════════════════════════════════════════════════════════════════
-
-annotate service.InventorySnapshots with @(
-  UI.HeaderInfo : {
-    TypeName       : '재고 스냅샷',
-    TypeNamePlural : '재고 스냅샷 이력',
-    Title          : { $Type: 'UI.DataField', Value: snapshotDate },
-    Description    : { $Type: 'UI.DataField', Value: store.name }
-  },
-
-  UI.SelectionFields : [ store_ID, product_ID, snapshotDate, stockStatus ],
-
-  UI.LineItem : [
-    { $Type: 'UI.DataField', Value: snapshotDate,   Label: '스냅샷일', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: store.name,     Label: '점포', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: product.name,   Label: '상품', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: quantity,        Label: '현재 재고', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: reservedQty,     Label: '예약 수량', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: availableQty,    Label: '가용 재고', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: daysOfSupply,    Label: '재고일수', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: stockStatus,     Label: '재고 상태', ![@HTML5.CssDefaults]: { width: 'auto' } }
-  ],
-
-  UI.Facets : [
-    { $Type: 'UI.ReferenceFacet', ID: 'SnapshotInfo', Label: '스냅샷 정보', Target: '@UI.FieldGroup#SnapshotInfo' }
-  ],
-
-  UI.FieldGroup #SnapshotInfo : {
-    $Type : 'UI.FieldGroupType',
-    Data  : [
-      { $Type: 'UI.DataField', Value: snapshotDate,  Label: '스냅샷일' },
-      { $Type: 'UI.DataField', Value: store_ID,      Label: '점포' },
-      { $Type: 'UI.DataField', Value: product_ID,    Label: '상품' },
-      { $Type: 'UI.DataField', Value: quantity,       Label: '현재 재고' },
-      { $Type: 'UI.DataField', Value: reservedQty,    Label: '예약 수량' },
-      { $Type: 'UI.DataField', Value: availableQty,   Label: '가용 재고' },
-      { $Type: 'UI.DataField', Value: daysOfSupply,   Label: '재고일수' },
-      { $Type: 'UI.DataField', Value: stockStatus,    Label: '재고 상태' }
-    ]
-  }
-);
-
-annotate service.InventorySnapshots with {
-  snapshotDate @title: '스냅샷일';
-  quantity     @title: '현재 재고';
-  reservedQty  @title: '예약 수량';
-  availableQty @title: '가용 재고';
-  daysOfSupply @title: '재고일수';
-  stockStatus  @title: '재고 상태';
-  store        @(
-    title: '점포',
-    Common.Text: store.name,
-    Common.TextArrangement: #TextFirst,
-    Common.ValueList : {
-      $Type          : 'Common.ValueListType',
-      CollectionPath : 'Stores',
-      Parameters     : [
-        { $Type: 'Common.ValueListParameterInOut', LocalDataProperty: store_ID, ValueListProperty: 'ID' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'storeCode' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'name' }
-      ]
-    }
-  );
-  product      @(
-    title: '상품',
-    Common.Text: product.name,
-    Common.TextArrangement: #TextFirst,
-    Common.ValueList : {
-      $Type          : 'Common.ValueListType',
-      CollectionPath : 'Products',
-      Parameters     : [
-        { $Type: 'Common.ValueListParameterInOut', LocalDataProperty: product_ID, ValueListProperty: 'ID' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'productCode' },
-        { $Type: 'Common.ValueListParameterDisplayOnly', ValueListProperty: 'name' }
-      ]
-    }
-  );
-};
-
+annotate service.DailySales with { salesDate @title:'매출일'; revenue @title:'매출액'; profit @title:'이익'; };

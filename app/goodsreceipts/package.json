@@ -1,0 +1,11 @@
+{
+  "name": "goodsreceipts",
+  "version": "0.0.1",
+  "description": "입고검수 관리",
+  "main": "webapp/index.html",
+  "dependencies": {},
+  "devDependencies": {
+    "@ui5/cli": "^4.0.33",
+    "@sap/ux-ui5-tooling": "1"
+  }
+}

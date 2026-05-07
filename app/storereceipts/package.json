@@ -1,0 +1,11 @@
+{
+  "name": "storereceipts",
+  "version": "0.0.1",
+  "description": "점포입고 관리",
+  "main": "webapp/index.html",
+  "dependencies": {},
+  "devDependencies": {
+    "@ui5/cli": "^4.0.33",
+    "@sap/ux-ui5-tooling": "1"
+  }
+}

@@ -107,7 +107,7 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
                     <div><label style="font-size:0.72rem;color:#556B82;display:block;margin-bottom:0.3rem;">점포</label><select id="poStore" style="width:100%;padding:0.5rem;border:1px solid #E5E8ED;border-radius:6px;font-size:0.8rem;"></select></div>
                     <div><label style="font-size:0.72rem;color:#556B82;display:block;margin-bottom:0.3rem;">상품</label><select id="poProduct" style="width:100%;padding:0.5rem;border:1px solid #E5E8ED;border-radius:6px;font-size:0.8rem;"></select></div>
-                    <div><label style="font-size:0.72rem;color:#556B82;display:block;margin-bottom:0.3rem;">발주 수량</label><input id="poQuantity" type="number" style="width:100%;padding:0.5rem;border:1px solid #E5E8ED;border-radius:6px;font-size:0.8rem;" /></div>
+                    <div><label style="font-size:0.72rem;color:#556B82;display:block;margin-bottom:0.3rem;">발주 수량</label><input id="poQuantity" type="number" style="width:100%;padding:0.5rem;border:1px solid #E5E8ED;border-radius:6px;font-size:0.8rem;" /><div id="qtyBasis" style="margin-top:0.3rem;font-size:0.65rem;color:#0070F2;background:#F0F5FF;padding:0.4rem 0.6rem;border-radius:4px;display:none;"></div></div>
                     <div><label style="font-size:0.72rem;color:#556B82;display:block;margin-bottom:0.3rem;">단가 (₩)</label><input id="poUnitPrice" type="number" value="20000" style="width:100%;padding:0.5rem;border:1px solid #E5E8ED;border-radius:6px;font-size:0.8rem;" /></div>
                 </div>
                 <div style="display:flex;gap:0.75rem;">
@@ -147,6 +147,14 @@
                 qty7days = Math.round(parseFloat(data.kpi.avg) * 7);
             }
             document.getElementById("poQuantity").value = qty7days;
+            // Show calculation basis
+            var basisDiv = document.getElementById("qtyBasis");
+            if (basisDiv && data.table && data.table.length > 0) {
+                var details = slice7.map(function(r) { return r.date.slice(5) + ": " + r.forecast.toFixed(1); }).join(" + ");
+                var sum = slice7.reduce(function(s, r) { return s + r.forecast; }, 0).toFixed(1);
+                basisDiv.innerHTML = "📈 <b>산출 균거:</b> 7일 예측 합계 = " + sum + "<br><span style='color:#556B82;'>" + details + "</span>";
+                basisDiv.style.display = "block";
+            }
             // 점포 자동 선택
             if (data.storeName) {
                 var stSel = document.getElementById("poStore");

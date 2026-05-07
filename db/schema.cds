@@ -34,7 +34,6 @@ entity Suppliers : cuid, managed {
   isActive      : Boolean default true;
   description   : String(1000);
   materials     : Association to many Materials on materials.supplier = $self;
-  supplyOrders  : Association to many SupplyOrders on supplyOrders.supplier = $self;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -104,7 +103,6 @@ entity Stores : cuid, managed {
   description   : String(1000);
   inventories   : Association to many Inventories on inventories.store = $self;
   storeProducts : Association to many StoreProducts on storeProducts.store = $self;
-  supplyOrders  : Association to many SupplyOrders on supplyOrders.store = $self;
   customers     : Association to many Customers on customers.preferredStore = $self;
 }
 
@@ -143,7 +141,8 @@ entity Inventories : cuid, managed {
 entity PurchaseOrders : cuid, managed {
   poNumber     : String(20) @assert.unique;  // 자동 채번 PO-YYYYMMDD-XXXX
   product      : Association to Products;
-  store        : Association to Stores;      // 발주 대상 점포
+  store        : Association to Stores;      // 발주 대상 점포 (점포 직납)
+  dc           : Association to DistributionCenters; // 입고 물류센터 (물류 발주)
   supplier     : Association to Suppliers;   // 발주 대상 공급업체
   quantity     : Integer not null;
   unitPrice    : Decimal(15,2) default 0;
@@ -157,36 +156,6 @@ entity PurchaseOrders : cuid, managed {
   note         : String(500);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// SupplyOrder (공급/입출고 주문)
-// ═══════════════════════════════════════════════════════════════════════
-entity SupplyOrders : cuid, managed {
-  orderNumber   : String(20) @assert.unique;   // 자동 채번 SO-YYYYMMDD-XXXX
-  store         : Association to Stores;
-  supplier      : Association to Suppliers;
-  orderType     : String(20);     // SUPPLY(공급), RETURN(반품), TRANSFER(점포간이동)
-  status        : String(20) default 'Draft';  // Draft / Confirmed / Shipped / Delivered / Cancelled
-  orderDate     : Date;
-  expectedDate  : Date;
-  deliveredDate : Date;
-  totalAmount   : Decimal(15,2) default 0;
-  requestedBy   : String(100);
-  note          : String(500);
-  items         : Composition of many SupplyOrderItems on items.supplyOrder = $self;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// SupplyOrderItem (공급 주문 상세 품목)
-// ═══════════════════════════════════════════════════════════════════════
-entity SupplyOrderItems : cuid, managed {
-  supplyOrder  : Association to SupplyOrders;
-  product      : Association to Products;
-  material     : Association to Materials;
-  quantity     : Integer not null default 1;
-  unitPrice    : Decimal(15,2) default 0;
-  totalPrice   : Decimal(15,2) default 0;   // computed: quantity * unitPrice
-  note         : String(200);
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // Customer (고객 마스터)
@@ -252,19 +221,6 @@ entity DailySales : cuid, managed {
   customerCount : Integer default 0;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// InventorySnapshot (재고 스냅샷 이력 - ML 재고 최적화 입력)
-// ═══════════════════════════════════════════════════════════════════════
-entity InventorySnapshots : cuid, managed {
-  store         : Association to Stores;
-  product       : Association to Products;
-  snapshotDate  : Date;
-  quantity      : Integer default 0;
-  reservedQty   : Integer default 0;
-  availableQty  : Integer default 0;
-  daysOfSupply  : Decimal(5,1) default 0;   // 재고일수
-  stockStatus   : String(20);               // NORMAL / LOW / OUT / OVERSTOCK
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // DemandForecast (수요 예측 결과 - ML 출력 저장)
@@ -372,4 +328,187 @@ entity SalesAnomalies : cuid, managed {
   modelName        : String(50);               // IsolationForest, ZScore 등
   modelVersion     : String(20);
   detectedAt       : Timestamp;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DistributionCenter (물류센터/DC)
+// ═══════════════════════════════════════════════════════════════════════
+entity DistributionCenters : cuid, managed {
+  dcCode        : String(20) @mandatory @assert.unique;
+  name          : String(200) @mandatory;
+  address       : String(500);
+  city          : String(100);
+  postalCode    : String(10);
+  country       : String(50) default '대한민국';
+  phone         : String(20);
+  email         : String(100);
+  manager       : String(100);
+  capacity      : Integer default 0;        // 최대 보관 수량(팔레트)
+  currentStock  : Integer default 0;        // 현재 보관량
+  dcType        : String(20);               // CENTRAL(중앙), REGIONAL(권역), COLD(저온)
+  isActive      : Boolean default true;
+  description   : String(1000);
+  inboundOrders   : Association to many InboundOrders on inboundOrders.dc = $self;
+  goodsReceipts   : Association to many GoodsReceipts on goodsReceipts.dc = $self;
+  transferOrders  : Association to many TransferOrders on transferOrders.dc = $self;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// InboundOrder (입고오더: 공급업체 → 물류센터)
+// ═══════════════════════════════════════════════════════════════════════
+entity InboundOrders : cuid, managed {
+  orderNumber   : String(20) @assert.unique;   // IO-YYYYMMDD-XXXX
+  supplier      : Association to Suppliers;
+  dc            : Association to DistributionCenters;
+  purchaseOrder : Association to PurchaseOrders;
+  status        : String(20) default 'Pending';  // Pending / InTransit / Arrived / Inspecting / Completed / Rejected
+  orderDate     : Date;
+  expectedDate  : Date;
+  arrivedDate   : Date;
+  totalAmount   : Decimal(15,2) default 0;
+  requestedBy   : String(100);
+  note          : String(500);
+  items         : Composition of many InboundOrderItems on items.inboundOrder = $self;
+  goodsReceipts : Association to many GoodsReceipts on goodsReceipts.inboundOrder = $self;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// InboundOrderItem (입고오더 상세 품목)
+// ═══════════════════════════════════════════════════════════════════════
+entity InboundOrderItems : cuid, managed {
+  inboundOrder  : Association to InboundOrders;
+  product       : Association to Products;
+  material      : Association to Materials;
+  orderedQty    : Integer not null default 1;
+  receivedQty   : Integer default 0;
+  unitPrice     : Decimal(15,2) default 0;
+  totalPrice    : Decimal(15,2) default 0;
+  note          : String(200);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// GoodsReceipt (입고검수: 물류센터에서 수량/품질 확인)
+// ═══════════════════════════════════════════════════════════════════════
+entity GoodsReceipts : cuid, managed {
+  grNumber      : String(20) @assert.unique;   // GR-YYYYMMDD-XXXX
+  inboundOrder  : Association to InboundOrders;
+  dc            : Association to DistributionCenters;
+  store         : Association to Stores;             // 점포 직납 GR용
+  status        : String(20) default 'Inspecting';  // Inspecting / Passed / PartialReject / Rejected
+  inspectedBy   : String(100);
+  inspectedAt   : Timestamp;
+  totalPassedQty  : Integer default 0;
+  totalRejectedQty: Integer default 0;
+  rejectReason  : String(500);
+  note          : String(500);
+  items         : Composition of many GoodsReceiptItems on items.goodsReceipt = $self;
+  invoice       : Association to Invoices;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// GoodsReceiptItem (입고검수 상세 품목)
+// ═══════════════════════════════════════════════════════════════════════
+entity GoodsReceiptItems : cuid, managed {
+  goodsReceipt  : Association to GoodsReceipts;
+  product       : Association to Products;
+  orderedQty    : Integer default 0;
+  passedQty     : Integer default 0;
+  rejectedQty   : Integer default 0;
+  inspectionNote: String(200);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Invoice (인보이스/세금계산서)
+// ═══════════════════════════════════════════════════════════════════════
+entity Invoices : cuid, managed {
+  invoiceNumber : String(20) @assert.unique;   // IV-YYYYMMDD-XXXX
+  supplier      : Association to Suppliers;
+  goodsReceipt  : Association to GoodsReceipts;
+  purchaseOrder : Association to PurchaseOrders;
+  status        : String(20) default 'Draft';  // Draft / Submitted / Approved / Paid / Cancelled
+  invoiceDate   : Date;
+  dueDate       : Date;
+  paidDate      : Date;
+  subtotal      : Decimal(15,2) default 0;
+  taxRate       : Decimal(5,2) default 10;     // 부가세율 (%)
+  taxAmount     : Decimal(15,2) default 0;
+  totalAmount   : Decimal(15,2) default 0;
+  paymentMethod : String(20);                  // BANK_TRANSFER / CHECK / CREDIT
+  paymentRef    : String(50);                  // 결제 참조번호
+  note          : String(500);
+  items         : Composition of many InvoiceItems on items.invoice = $self;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// InvoiceItem (인보이스 상세 품목)
+// ═══════════════════════════════════════════════════════════════════════
+entity InvoiceItems : cuid, managed {
+  invoice       : Association to Invoices;
+  product       : Association to Products;
+  quantity      : Integer not null default 1;
+  unitPrice     : Decimal(15,2) default 0;
+  amount        : Decimal(15,2) default 0;     // quantity * unitPrice
+  taxAmount     : Decimal(15,2) default 0;
+  note          : String(200);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TransferOrder (배송지시: 물류센터 → 점포)
+// ═══════════════════════════════════════════════════════════════════════
+entity TransferOrders : cuid, managed {
+  toNumber      : String(20) @assert.unique;   // TO-YYYYMMDD-XXXX
+  dc            : Association to DistributionCenters;
+  store         : Association to Stores;
+  status        : String(20) default 'Created';  // Created / Picking / Packed / Shipped / Delivered / Cancelled
+  priority      : String(10) default 'NORMAL';   // URGENT / HIGH / NORMAL / LOW
+  createdDate   : Date;
+  pickedDate    : Date;
+  shippedDate   : Date;
+  deliveredDate : Date;
+  totalQty      : Integer default 0;
+  carrier       : String(100);                 // 운송업체
+  trackingNo    : String(50);                  // 운송장번호
+  note          : String(500);
+  items         : Composition of many TransferOrderItems on items.transferOrder = $self;
+  storeReceipt  : Association to StoreReceipts;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TransferOrderItem (배송지시 상세 품목)
+// ═══════════════════════════════════════════════════════════════════════
+entity TransferOrderItems : cuid, managed {
+  transferOrder : Association to TransferOrders;
+  product       : Association to Products;
+  requestedQty  : Integer not null default 1;
+  pickedQty     : Integer default 0;
+  shippedQty    : Integer default 0;
+  note          : String(200);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// StoreReceipt (점포입고: 점포에서 배송 수령 확인)
+// ═══════════════════════════════════════════════════════════════════════
+entity StoreReceipts : cuid, managed {
+  srNumber      : String(20) @assert.unique;   // SR-YYYYMMDD-XXXX
+  transferOrder : Association to TransferOrders;
+  store         : Association to Stores;
+  status        : String(20) default 'Pending';  // Pending / Received / PartialReceived / Rejected
+  receivedBy    : String(100);
+  receivedAt    : Timestamp;
+  totalReceivedQty : Integer default 0;
+  totalDamagedQty  : Integer default 0;
+  note          : String(500);
+  items         : Composition of many StoreReceiptItems on items.storeReceipt = $self;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// StoreReceiptItem (점포입고 상세 품목)
+// ═══════════════════════════════════════════════════════════════════════
+entity StoreReceiptItems : cuid, managed {
+  storeReceipt  : Association to StoreReceipts;
+  product       : Association to Products;
+  expectedQty   : Integer default 0;
+  receivedQty   : Integer default 0;
+  damagedQty    : Integer default 0;
+  note          : String(200);
 }

@@ -9,7 +9,7 @@ module.exports = cds.service.impl(async function () {
   const {
     Categories, Products, Inventories, PurchaseOrders, Stores,
     Suppliers, Materials, StoreProducts, ProductMaterials,
-    SupplyOrders, SupplyOrderItems,
+    
     Customers, CustomerPurchases, CustomerPurchaseItems,
     DailySales, InventorySnapshots, DemandForecasts, OrderRecommendations
   } = this.entities;
@@ -63,39 +63,6 @@ module.exports = cds.service.impl(async function () {
     }
   });
 
-  // ════════════════════════════════════════════════════════════════════
-  // SupplyOrders - BEFORE CREATE: 주문 번호 자동 채번
-  // ════════════════════════════════════════════════════════════════════
-  this.before('CREATE', SupplyOrders, async (req) => {
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    const dateStr = `${y}${m}${d}`;
-
-    const result = await SELECT.one
-      .from(SupplyOrders)
-      .columns('count(*) as cnt')
-      .where`orderNumber like ${'SO-' + dateStr + '%'}`;
-
-    const seq = String((result?.cnt || 0) + 1).padStart(4, '0');
-    req.data.orderNumber = `SO-${dateStr}-${seq}`;
-
-    if (!req.data.status) req.data.status = 'Draft';
-    if (!req.data.orderDate) req.data.orderDate = new Date().toISOString().split('T')[0];
-  });
-
-  // ════════════════════════════════════════════════════════════════════
-  // SupplyOrderItems - BEFORE CREATE/UPDATE: totalPrice 자동 계산
-  // ════════════════════════════════════════════════════════════════════
-  this.before(['CREATE', 'UPDATE'], SupplyOrderItems, async (req) => {
-    if (req.data.unitPrice != null && req.data.quantity != null) {
-      req.data.totalPrice = req.data.unitPrice * req.data.quantity;
-    }
-  });
-
-  // ════════════════════════════════════════════════════════════════════
-  // Inventories - AFTER READ: availableQty 계산
   // ════════════════════════════════════════════════════════════════════
   this.after('READ', Inventories, (data) => {
     const items = Array.isArray(data) ? data : [data];
@@ -273,110 +240,6 @@ module.exports = cds.service.impl(async function () {
     return updated;
   });
 
-  // ════════════════════════════════════════════════════════════════════
-  // Action: confirmOrder (Draft → Confirmed) - SupplyOrders
-  // ════════════════════════════════════════════════════════════════════
-  this.on('confirmOrder', SupplyOrders, async (req) => {
-    const { ID } = req.params[0];
-    const so = await SELECT.one.from(SupplyOrders).where({ ID });
-    if (!so) return req.error(404, `공급 주문을 찾을 수 없습니다: ${ID}`);
-    if (so.status !== 'Draft') {
-      return req.error(400, `주문 확정은 'Draft' 상태에서만 가능합니다. (현재: ${so.status})`);
-    }
-
-    // items totalAmount 합산
-    const items = await SELECT.from(SupplyOrderItems).where({ supplyOrder_ID: ID });
-    const total = items.reduce((sum, it) => sum + (it.totalPrice || 0), 0);
-
-    await UPDATE(SupplyOrders).set({ status: 'Confirmed', totalAmount: total }).where({ ID });
-    const updated = await SELECT.one.from(SupplyOrders).where({ ID });
-    req.info(`공급 주문 ${so.orderNumber}이(가) 확정되었습니다.`);
-    return updated;
-  });
-
-  // ════════════════════════════════════════════════════════════════════
-  // Action: shipOrder (Confirmed → Shipped) - SupplyOrders
-  // ════════════════════════════════════════════════════════════════════
-  this.on('shipOrder', SupplyOrders, async (req) => {
-    const { ID } = req.params[0];
-    const so = await SELECT.one.from(SupplyOrders).where({ ID });
-    if (!so) return req.error(404, `공급 주문을 찾을 수 없습니다: ${ID}`);
-    if (so.status !== 'Confirmed') {
-      return req.error(400, `출하는 'Confirmed' 상태에서만 가능합니다. (현재: ${so.status})`);
-    }
-    await UPDATE(SupplyOrders).set({ status: 'Shipped' }).where({ ID });
-    const updated = await SELECT.one.from(SupplyOrders).where({ ID });
-    req.info(`공급 주문 ${so.orderNumber}이(가) 출하되었습니다.`);
-    return updated;
-  });
-
-  // ════════════════════════════════════════════════════════════════════
-  // Action: deliverOrder (Shipped → Delivered, 재고 반영) - SupplyOrders
-  // ════════════════════════════════════════════════════════════════════
-  this.on('deliverOrder', SupplyOrders, async (req) => {
-    const { ID } = req.params[0];
-    const so = await SELECT.one.from(SupplyOrders).where({ ID });
-    if (!so) return req.error(404, `공급 주문을 찾을 수 없습니다: ${ID}`);
-    if (so.status !== 'Shipped') {
-      return req.error(400, `배송 완료는 'Shipped' 상태에서만 가능합니다. (현재: ${so.status})`);
-    }
-
-    const now = new Date().toISOString();
-    await UPDATE(SupplyOrders).set({
-      status: 'Delivered',
-      deliveredDate: now.split('T')[0]
-    }).where({ ID });
-
-    // 각 품목에 대해 재고 반영
-    const items = await SELECT.from(SupplyOrderItems).where({ supplyOrder_ID: ID });
-    for (const item of items) {
-      if (!item.product_ID) continue;
-      const invWhere = { product_ID: item.product_ID };
-      if (so.store_ID) invWhere.store_ID = so.store_ID;
-
-      const inv = await SELECT.one.from(Inventories).where(invWhere);
-      if (inv) {
-        const newQty = so.orderType === 'RETURN'
-          ? Math.max(0, inv.quantity - item.quantity)
-          : inv.quantity + item.quantity;
-        await UPDATE(Inventories).set({ quantity: newQty, lastUpdated: now }).where({ ID: inv.ID });
-      } else if (so.orderType !== 'RETURN') {
-        await INSERT.into(Inventories).entries({
-          ID: cds.utils.uuid(),
-          product_ID: item.product_ID,
-          store_ID: so.store_ID || null,
-          warehouse: 'WH-DEFAULT',
-          quantity: item.quantity,
-          reservedQty: 0,
-          lastUpdated: now
-        });
-      }
-    }
-
-    const updated = await SELECT.one.from(SupplyOrders).where({ ID });
-    req.info(`공급 주문 ${so.orderNumber} 배송 완료. 재고가 반영되었습니다.`);
-    return updated;
-  });
-
-  // ════════════════════════════════════════════════════════════════════
-  // Action: cancelOrder (Draft/Confirmed → Cancelled) - SupplyOrders
-  // ════════════════════════════════════════════════════════════════════
-  this.on('cancelOrder', SupplyOrders, async (req) => {
-    const { ID } = req.params[0];
-    const { reason } = req.data || {};
-    const so = await SELECT.one.from(SupplyOrders).where({ ID });
-    if (!so) return req.error(404, `공급 주문을 찾을 수 없습니다: ${ID}`);
-    if (!['Draft', 'Confirmed'].includes(so.status)) {
-      return req.error(400, `주문 취소는 'Draft' 또는 'Confirmed' 상태에서만 가능합니다. (현재: ${so.status})`);
-    }
-    await UPDATE(SupplyOrders).set({
-      status: 'Cancelled',
-      note: reason ? `취소 사유: ${reason}` : (so.note || '')
-    }).where({ ID });
-    const updated = await SELECT.one.from(SupplyOrders).where({ ID });
-    req.info(`공급 주문 ${so.orderNumber}이(가) 취소되었습니다.`);
-    return updated;
-  });
 
   // ════════════════════════════════════════════════════════════════════
   // Products - 안전재고 등 수정 안내
