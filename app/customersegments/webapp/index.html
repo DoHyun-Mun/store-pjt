@@ -27,6 +27,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:#F5F6FA;color:#1D2D
 .seg-card.loyal::before{background:linear-gradient(90deg,#4CAF50,#2E7D32)}
 .seg-card.atrisk::before{background:linear-gradient(90deg,#FF9800,#E65100)}
 .seg-card.new::before{background:linear-gradient(90deg,#2196F3,#0D47A1)}
+.seg-card.grower::before{background:linear-gradient(90deg,#66BB6A,#388E3C)}
 .seg-top{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem}
 .seg-icon{font-size:1.5rem}
 .seg-name{font-size:0.9rem;font-weight:700}
@@ -65,6 +66,7 @@ tr:hover td{background:#F8F9FB}
 .seg-badge.Loyal_Regulars{background:#E8F5E9;color:#2E7D32}
 .seg-badge.At_Risk{background:#FBE9E7;color:#D84315}
 .seg-badge.New_Customers{background:#E3F2FD;color:#1565C0}
+.seg-badge.Potential_Growers{background:#E8F5E9;color:#388E3C}
 .empty-state{text-align:center;padding:4rem 2rem;color:#8396A8}
 .empty-state .icon{font-size:3rem;margin-bottom:1rem}
 </style>
@@ -143,6 +145,13 @@ var SEG_META = {
         strategies: ["웰컴 할인 쿠폰 (첫 재구매 20% OFF)", "온보딩 가이드 (인기 상품/혜택 안내)", "2회차 구매 리워드 포인트 2배", "카테고리별 추천 상품 큐레이션"],
         effect: "기대효과: 2회차 구매 전환율 +30%, 초기 이탈 방지",
         action: "웰컴 시리즈 자동 발송 (D+1, D+3, D+7)", channel: "이메일/앱푸시", kpi: "2회 구매율 30%↑", priority: "medium"
+    },
+    "Potential_Growers": {
+        icon: "🌱", color: "grower",
+        desc: "구매 빈도와 금액은 아직 낮지만 최근 활동이 활발하여 성장 가능성이 큰 고객군입니다. 적절한 육성 전략으로 Loyal/VIP로 전환 가능합니다.",
+        strategies: ["구매 금액별 단계 리워드 (3만원↑ 시 적립 2배)", "관심 카테고리 기반 큐레이션 할인", "구매 횟수 마일스톤 보상 (5회 달성 시 10% 쿠폰)", "리뷰 작성 보상 포인트 (참여 유도)"],
+        effect: "기대효과: 구매 빈도 +40%, 객단가 +20%, 6개월 내 Loyal 전환율 25%",
+        action: "성장 촉진 프로모션 (단계별 리워드)", channel: "앱푸시/이메일", kpi: "구매빈도 40%↑", priority: "medium"
     }
 };
 
