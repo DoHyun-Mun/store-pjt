@@ -1,1 +1,0 @@
-using InventoryService as service from '../../srv/service';

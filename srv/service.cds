@@ -214,13 +214,6 @@ service InventoryService @(path: '/inventory') {
   entity DistributionCenters as projection on db.DistributionCenters;
 
   /**
-   * InboundOrders - 입고오더 (공급업체 → 물류센터)
-   */
-  @odata.draft.enabled
-  entity InboundOrders as projection on db.InboundOrders;
-  entity InboundOrderItems as projection on db.InboundOrderItems;
-
-  /**
    * GoodsReceipts - 입고검수
    */
   @odata.draft.enabled
@@ -297,4 +290,5 @@ service InventoryService @(path: '/inventory') {
     confidenceLow: Decimal(15,2);
     confidenceHigh: Decimal(15,2);
   };
+
 }

@@ -348,50 +348,18 @@ entity DistributionCenters : cuid, managed {
   dcType        : String(20);               // CENTRAL(중앙), REGIONAL(권역), COLD(저온)
   isActive      : Boolean default true;
   description   : String(1000);
-  inboundOrders   : Association to many InboundOrders on inboundOrders.dc = $self;
   goodsReceipts   : Association to many GoodsReceipts on goodsReceipts.dc = $self;
   transferOrders  : Association to many TransferOrders on transferOrders.dc = $self;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// InboundOrder (입고오더: 공급업체 → 물류센터)
-// ═══════════════════════════════════════════════════════════════════════
-entity InboundOrders : cuid, managed {
-  orderNumber   : String(20) @assert.unique;   // IO-YYYYMMDD-XXXX
-  supplier      : Association to Suppliers;
-  dc            : Association to DistributionCenters;
-  purchaseOrder : Association to PurchaseOrders;
-  status        : String(20) default 'Pending';  // Pending / InTransit / Arrived / Inspecting / Completed / Rejected
-  orderDate     : Date;
-  expectedDate  : Date;
-  arrivedDate   : Date;
-  totalAmount   : Decimal(15,2) default 0;
-  requestedBy   : String(100);
-  note          : String(500);
-  items         : Composition of many InboundOrderItems on items.inboundOrder = $self;
-  goodsReceipts : Association to many GoodsReceipts on goodsReceipts.inboundOrder = $self;
-}
 
-// ═══════════════════════════════════════════════════════════════════════
-// InboundOrderItem (입고오더 상세 품목)
-// ═══════════════════════════════════════════════════════════════════════
-entity InboundOrderItems : cuid, managed {
-  inboundOrder  : Association to InboundOrders;
-  product       : Association to Products;
-  material      : Association to Materials;
-  orderedQty    : Integer not null default 1;
-  receivedQty   : Integer default 0;
-  unitPrice     : Decimal(15,2) default 0;
-  totalPrice    : Decimal(15,2) default 0;
-  note          : String(200);
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // GoodsReceipt (입고검수: 물류센터에서 수량/품질 확인)
 // ═══════════════════════════════════════════════════════════════════════
 entity GoodsReceipts : cuid, managed {
   grNumber      : String(20) @assert.unique;   // GR-YYYYMMDD-XXXX
-  inboundOrder  : Association to InboundOrders;
+  purchaseOrder : Association to PurchaseOrders;
   dc            : Association to DistributionCenters;
   store         : Association to Stores;             // 점포 직납 GR용
   status        : String(20) default 'Inspecting';  // Inspecting / Passed / PartialReject / Rejected
@@ -470,6 +438,7 @@ entity TransferOrders : cuid, managed {
   trackingNo    : String(50);                  // 운송장번호
   note          : String(500);
   items         : Composition of many TransferOrderItems on items.transferOrder = $self;
+  goodsReceipt  : Association to GoodsReceipts;   // 입고검수 참조 (GR→TO 추적)
   storeReceipt  : Association to StoreReceipts;
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 유통 프로세스 연계 데이터 생성
- * PurchaseOrders 기반으로 InboundOrder → GoodsReceipt → Invoice → TransferOrder → StoreReceipt 체인 생성
+ * PurchaseOrders 기반으로 GoodsReceipt → Invoice → TransferOrder → StoreReceipt 체인 생성
  */
 const fs = require('fs');
 const path = require('path');
@@ -117,7 +117,7 @@ purchaseOrders.forEach((po, idx) => {
   const toStatus = isCompleted ? 'Delivered' : 'Shipped';
   const shipDate = dateFmt(2024, Math.min(12, orderMonth + 1), rand(1, 28));
   const delivDate = toStatus === 'Delivered' ? dateFmt(2024, Math.min(12, orderMonth + 2), rand(1, 28)) : '';
-  toRows.push([toId, 'TO-2024'+String(rand(100,999))+'-'+String(toSeq).padStart(4,'0'), dcId, storeId, toStatus, pick(['NORMAL','HIGH','URGENT']), dateFmt(2024, Math.min(12, orderMonth+1), rand(1,28)), shipDate, shipDate, delivDate, passedQty, pick(carriers), 'TRK'+rand(100000000,999999999), '', ts, 'admin', ts, 'admin'].join(','));
+  toRows.push([toId, 'TO-2024'+String(rand(100,999))+'-'+String(toSeq).padStart(4,'0'), dcId, storeId, toStatus, pick(['NORMAL','HIGH','URGENT']), dateFmt(2024, Math.min(12, orderMonth+1), rand(1,28)), shipDate, shipDate, delivDate, passedQty, pick(carriers), 'TRK'+rand(100000000,999999999), '', grId, ts, 'admin', ts, 'admin'].join(','));
   toiRows.push([uuid('e5100001', toiSeq), toId, productId, passedQty, passedQty, toStatus==='Delivered'?passedQty:0, '', ts, 'admin', ts, 'admin'].join(','));
   toiSeq++;
   toSeq++;
@@ -136,19 +136,17 @@ purchaseOrders.forEach((po, idx) => {
 // CSV 저장
 const headers = {
   io: 'ID,orderNumber,supplier_ID,dc_ID,purchaseOrder_ID,status,orderDate,expectedDate,arrivedDate,totalAmount,requestedBy,note,createdAt,createdBy,modifiedAt,modifiedBy',
-  ioi: 'ID,inboundOrder_ID,product_ID,material_ID,orderedQty,receivedQty,unitPrice,totalPrice,note,createdAt,createdBy,modifiedAt,modifiedBy',
-  gr: 'ID,grNumber,inboundOrder_ID,dc_ID,status,inspectedBy,inspectedAt,totalPassedQty,totalRejectedQty,rejectReason,note,createdAt,createdBy,modifiedAt,modifiedBy',
+  ioi: 'ID,purchaseOrder_ID,product_ID,material_ID,orderedQty,receivedQty,unitPrice,totalPrice,note,createdAt,createdBy,modifiedAt,modifiedBy',
+  gr: 'ID,grNumber,purchaseOrder_ID,dc_ID,status,inspectedBy,inspectedAt,totalPassedQty,totalRejectedQty,rejectReason,note,createdAt,createdBy,modifiedAt,modifiedBy',
   gri: 'ID,goodsReceipt_ID,product_ID,orderedQty,passedQty,rejectedQty,inspectionNote,createdAt,createdBy,modifiedAt,modifiedBy',
   iv: 'ID,invoiceNumber,supplier_ID,goodsReceipt_ID,purchaseOrder_ID,status,invoiceDate,dueDate,paidDate,subtotal,taxRate,taxAmount,totalAmount,paymentMethod,paymentRef,note,createdAt,createdBy,modifiedAt,modifiedBy',
   ivi: 'ID,invoice_ID,product_ID,quantity,unitPrice,amount,taxAmount,note,createdAt,createdBy,modifiedAt,modifiedBy',
-  to: 'ID,toNumber,dc_ID,store_ID,status,priority,createdDate,pickedDate,shippedDate,deliveredDate,totalQty,carrier,trackingNo,note,createdAt,createdBy,modifiedAt,modifiedBy',
+  to: 'ID,toNumber,dc_ID,store_ID,status,priority,createdDate,pickedDate,shippedDate,deliveredDate,totalQty,carrier,trackingNo,note,goodsReceipt_ID,createdAt,createdBy,modifiedAt,modifiedBy',
   toi: 'ID,transferOrder_ID,product_ID,requestedQty,pickedQty,shippedQty,note,createdAt,createdBy,modifiedAt,modifiedBy',
   sr: 'ID,srNumber,transferOrder_ID,store_ID,status,receivedBy,receivedAt,totalReceivedQty,totalDamagedQty,note,createdAt,createdBy,modifiedAt,modifiedBy',
   sri: 'ID,storeReceipt_ID,product_ID,expectedQty,receivedQty,damagedQty,note,createdAt,createdBy,modifiedAt,modifiedBy'
 };
 
-fs.writeFileSync(path.join(dataDir,'com.inventory-InboundOrders.csv'), headers.io+'\n'+ioRows.join('\n')+'\n');
-fs.writeFileSync(path.join(dataDir,'com.inventory-InboundOrderItems.csv'), headers.ioi+'\n'+ioiRows.join('\n')+'\n');
 fs.writeFileSync(path.join(dataDir,'com.inventory-GoodsReceipts.csv'), headers.gr+'\n'+grRows.join('\n')+'\n');
 fs.writeFileSync(path.join(dataDir,'com.inventory-GoodsReceiptItems.csv'), headers.gri+'\n'+griRows.join('\n')+'\n');
 fs.writeFileSync(path.join(dataDir,'com.inventory-Invoices.csv'), headers.iv+'\n'+ivRows.join('\n')+'\n');

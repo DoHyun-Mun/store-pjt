@@ -16,5 +16,14 @@
   },
   "hana": {
     "deploy-format": "hdbtable"
+  },
+  "log": {
+    "levels": {
+      "deploy": "error",
+      "db": "error",
+      "sql": "error",
+      "sqlite": "error",
+      "cds": "warn"
+    }
   }
 }
