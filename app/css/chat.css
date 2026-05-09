@@ -123,6 +123,7 @@
     max-height: 90px; min-height: 38px; outline: none;
     font-family: inherit; line-height: 1.4;
     transition: border-color 0.2s;
+    overflow-y: hidden;
 }
 .chat-input:focus { border-color: var(--chat-primary); }
 .chat-input::placeholder { color: #B39DDB; }

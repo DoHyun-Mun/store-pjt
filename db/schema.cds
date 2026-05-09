@@ -245,7 +245,6 @@ entity DemandForecasts : cuid, managed {
 entity MenuItems : cuid, managed {
   code        : String(30) @mandatory @assert.unique;
   title       : String(200) @mandatory;
-  icon        : String(50);              // 이모지 또는 SAP Icon
   level       : Integer default 1;       // 1=대메뉴, 2=중메뉴, 3=소메뉴
   url         : String(500);             // 이동할 URL (소메뉴만)
   parent      : Association to MenuItems;

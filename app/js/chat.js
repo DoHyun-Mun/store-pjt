@@ -14,7 +14,7 @@ function toggleChat() {
     else { panel.classList.remove('open'); tab.classList.remove('hidden'); main.classList.remove('chat-open'); }
 }
 function handleChatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }
-function autoResizeInput(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 90) + 'px'; }
+function autoResizeInput(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 90) + 'px'; el.style.overflowY = el.scrollHeight > 90 ? 'auto' : 'hidden'; }
 
 function appendMessage(role, content) {
     const msgDiv = document.createElement('div');

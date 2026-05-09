@@ -113,7 +113,10 @@ service InventoryService @(path: '/inventory') {
    * MenuItems - 메뉴 관리 (3계층 트리 구조)
    */
   @odata.draft.enabled
-  entity MenuItems as projection on db.MenuItems;
+  entity MenuItems as projection on db.MenuItems {
+    *,
+    null as levelText : String(10) @title: '레벨구분'
+  };
 
   // ════════════════════════════════════════════════════════════════════
   // 예측 분석 결과 엔티티 (Python ML 서버 → OData API → HANA)

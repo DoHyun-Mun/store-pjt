@@ -11,8 +11,22 @@ module.exports = cds.service.impl(async function () {
     Suppliers, Materials, StoreProducts, ProductMaterials,
     
     Customers, CustomerPurchases, CustomerPurchaseItems,
-    DailySales, InventorySnapshots, DemandForecasts, OrderRecommendations
+    DailySales, InventorySnapshots, DemandForecasts, OrderRecommendations,
+    MenuItems
   } = this.entities;
+
+  // ════════════════════════════════════════════════════════════════════
+  // MenuItems - AFTER READ: levelText 계산 (1=대메뉴, 2=중메뉴, 3=소메뉴)
+  // ════════════════════════════════════════════════════════════════════
+  const LEVEL_TEXT = { 1: '대메뉴', 2: '중메뉴', 3: '소메뉴' };
+  this.after('READ', MenuItems, (data) => {
+    const items = Array.isArray(data) ? data : [data];
+    items.forEach(item => {
+      if (item && item.level != null) {
+        item.levelText = LEVEL_TEXT[item.level] || '';
+      }
+    });
+  });
 
   // ════════════════════════════════════════════════════════════════════
   // PurchaseOrders - BEFORE CREATE: 발주 번호 자동 채번 + totalAmount 계산

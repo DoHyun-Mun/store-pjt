@@ -1,9 +1,11 @@
 let menuTree = [];
 // Menu Lucide icon map
+var MENU_ICON_COLORS={"MASTER":"#4CAF50","PROCURE":"#FF9800","LOGISTICS":"#0070F2","SALES":"#7B2FF2","AI":"#D93025","SYSTEM":"#556B82"};
 var MENU_ICONS={MASTER:"database",PROCURE:"shopping-cart",LOGISTICS:"truck",SALES:"trending-up",AI:"cpu",SYSTEM:"settings"};
-var SUB_ICONS={"CATEGORIES":"folder","PRODUCTS":"tag","MATERIALS":"settings","STORES":"home","STOREPRODUCTS":"grid","SUPPLIERS":"users","DC":"warehouse","PURCHASEORDERS":"clipboard","GOODS-RCPT":"check-circle","INVOICES":"file-text","TRANSFER-ORD":"truck","STORE-RCPT":"package","INVENTORIES":"bar-chart-2","CUSTOMERS":"user","CUSTPURCHASES":"shopping-bag","DAILYSALES":"trending-up","DEMAND-FCST":"activity","ORDER-REC":"target","CHURN-PRED":"alert-triangle","CUST-SEG":"pie-chart","SALES-ANOM":"zap","MENUS":"menu","ANOMALIES":"zap","CHURN":"alert-triangle","FORECASTS":"activity","SEGMENTS":"pie-chart","LOGISTICS":"truck","M-PARTNER":"users","P-SETTLE":"file-text"};
-function getMenuIcon(code,sz){var n=MENU_ICONS[code];if(n)return"<i data-lucide=\""+n+"\" class=\"menu-lucide\" style=\"width:"+(sz||15)+"px;height:"+(sz||15)+"px\"></i>";return"";}
-function getSubIcon(code,sz){var n=SUB_ICONS[code];if(n)return"<i data-lucide=\""+n+"\" class=\"menu-lucide\" style=\"width:"+(sz||14)+"px;height:"+(sz||14)+"px\"></i>";return"";}
+var ICON_COLORS={"CATEGORIES":"#4CAF50","PRODUCTS":"#FF9800","MATERIALS":"#7B2FF2","STORES":"#0070F2","STOREPRODUCTS":"#0070F2","SUPPLIERS":"#4CAF50","DC":"#D93025","PURCHASEORDERS":"#FF9800","GOODS-RCPT":"#4CAF50","INVOICES":"#7B2FF2","TRANSFER-ORD":"#0070F2","STORE-RCPT":"#7B2FF2","INVENTORIES":"#FF9800","CUSTOMERS":"#0070F2","CUSTPURCHASES":"#FF9800","DAILYSALES":"#4CAF50","FORECASTS":"#7B2FF2","ORDER-REC":"#FF9800","CHURN":"#D93025","SEGMENTS":"#7B2FF2","ANOMALIES":"#D93025","MENUS":"#556B82","LOGISTICS":"#0070F2","M-PARTNER":"#4CAF50","P-SETTLE":"#556B82"};
+var SUB_ICONS={"CATEGORIES":"folder","PRODUCTS":"tag","MATERIALS":"settings","STORES":"home","STOREPRODUCTS":"grid","SUPPLIERS":"users","DC":"warehouse","PURCHASEORDERS":"clipboard","GOODS-RCPT":"check-circle","INVOICES":"file-text","TRANSFER-ORD":"truck","STORE-RCPT":"package","INVENTORIES":"warehouse","CUSTOMERS":"user","CUSTPURCHASES":"shopping-bag","DAILYSALES":"trending-up","DEMAND-FCST":"activity","ORDER-REC":"target","CHURN-PRED":"alert-triangle","CUST-SEG":"pie-chart","SALES-ANOM":"zap","MENUS":"clipboard-list","ANOMALIES":"zap","CHURN":"alert-triangle","FORECASTS":"activity","SEGMENTS":"pie-chart","LOGISTICS":"truck","M-PARTNER":"users","P-SETTLE":"file-text"};
+function getMenuIcon(code,sz){var n=MENU_ICONS[code];var c=MENU_ICON_COLORS[code]||"#556B82";if(n)return"<i data-lucide=\""+n+"\" class=\"menu-lucide\" style=\"width:"+(sz||15)+"px;height:"+(sz||15)+"px;color:"+c+"\"></i>";return"";}
+function getSubIcon(code,sz){var n=SUB_ICONS[code];var c=ICON_COLORS[code]||"#556B82";if(n)return"<i data-lucide=\""+n+"\" class=\"menu-lucide\" style=\"width:"+(sz||14)+"px;height:"+(sz||14)+"px;color:"+c+"\"></i>";return"";}
 
 let activeTopMenuId = null;
 let salesChart, inventoryChart, ordersChart;
@@ -13,7 +15,7 @@ document.getElementById('dashDate').textContent = new Date().toLocaleDateString(
 
 async function loadMenuData() {
     try {
-        const res = await fetch('/inventory/MenuItems?$filter=isActive eq true&$orderby=sortOrder asc&$select=ID,code,title,icon,level,url,parent_ID,sortOrder');
+        const res = await fetch('/inventory/MenuItems?$filter=isActive eq true&$orderby=sortOrder asc&$select=ID,code,title,level,url,parent_ID,sortOrder');
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
         const items = data.value || [];
@@ -45,7 +47,6 @@ function showDashboard() {
     document.getElementById('contentFrameWrap').style.display = 'none';
     document.getElementById('contentFrame').src = '';
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    document.querySelectorAll('.top-menu-item').forEach(i => i.classList.remove('active'));
     loadDashboardData();
 }
 
@@ -101,7 +102,16 @@ function toggleSidebar() {
     document.querySelector('.shell-bar').style.left = isCollapsing ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)';
 }
 
-document.addEventListener("DOMContentLoaded", () => { loadMenuData(); loadDashboardData(); toggleChat(); });
+// 페이지 최초 로드 시 AI 예측 결과 초기화 (새 세션 = 깨끗한 시작)
+function clearAILocalStorage() {
+    localStorage.removeItem('forecastData');
+    localStorage.removeItem('orderRecommendationData');
+    localStorage.removeItem('churnPredictionData');
+    localStorage.removeItem('customerSegmentData');
+    localStorage.removeItem('salesAnomalyData');
+}
+
+document.addEventListener("DOMContentLoaded", () => { clearAILocalStorage(); loadMenuData(); loadDashboardData(); toggleChat(); });
 
 // iframe에서 오는 navigateTo 메시지 수신
 window.addEventListener("message", function(e) {
