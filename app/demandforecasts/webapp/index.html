@@ -236,7 +236,9 @@ async function submitPO() {
     var resultDiv = document.getElementById("poResult");
     resultDiv.innerHTML = "<span style='color:#556B82;'>⏳ 발주 생성 중...</span>";
     try {
-        var res = await fetch("/inventory/PurchaseOrders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ product_ID: productId, store_ID: storeId, quantity: quantity, unitPrice: unitPrice }) });
+        var tokenRes = await fetch("/inventory/PurchaseOrders", { method: "HEAD", headers: { "x-csrf-token": "fetch" } });
+        var csrfToken = tokenRes.headers.get("x-csrf-token") || "";
+        var res = await fetch("/inventory/PurchaseOrders", { method: "POST", headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken }, body: JSON.stringify({ product_ID: productId, store_ID: storeId, quantity: quantity, unitPrice: unitPrice }) });
         if (res.ok) { var po = await res.json(); resultDiv.innerHTML = "<span style='color:#188038;font-weight:600;'>✅ 발주 생성 완료! " + (po.poNumber||"") + " (수량: " + quantity + ")</span>"; }
         else { var err = await res.text(); resultDiv.innerHTML = "<span style='color:#D93025;'>❌ 생성 실패: " + err.substring(0,80) + "</span>"; }
     } catch(e) { resultDiv.innerHTML = "<span style='color:#D93025;'>❌ 오류: " + e.message + "</span>"; }

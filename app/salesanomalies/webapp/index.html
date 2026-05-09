@@ -48,6 +48,10 @@ tr:hover td{background:#F8F9FB}
 .reason-item:last-child{border-bottom:none}
 .empty-state{text-align:center;padding:4rem 2rem;color:#8396A8}
 .empty-state .icon{font-size:3rem;margin-bottom:1rem}
+
+.action-tag{display:inline-block;padding:3px 8px;border-radius:4px;font-size:0.6rem;font-weight:600;white-space:nowrap}
+.action-tag.spike-action{background:#FCE8E6;color:#D93025}
+.action-tag.drop-action{background:#E8F0FE;color:#1A73E8}
 </style>
 </head>
 <body>
@@ -96,7 +100,7 @@ tr:hover td{background:#F8F9FB}
 <h3>⚠️ 주요 이상 항목 (상위 10건)</h3>
 <div class="table-wrap">
 <table id="anomTable">
-<thead><tr><th>날짜</th><th>상품명</th><th>판매량</th><th>정상 범위 대비</th><th>유형</th><th>심각도</th></tr></thead>
+<thead><tr><th>날짜</th><th>상품명</th><th>판매량</th><th>정상 범위 대비</th><th>유형</th><th>심각도</th><th>권장 조치</th></tr></thead>
 <tbody></tbody>
 </table>
 </div>
@@ -140,7 +144,9 @@ function render(d) {
             var sevClass = "sev-" + (r.severity || "MEDIUM");
             var chg = String(r.change || "-");
             var changeClass = (chg.indexOf("+") !== -1 || chg.indexOf("급등") !== -1) ? "spike-val" : (chg.indexOf("-") !== -1 || chg.indexOf("급감") !== -1 ? "drop-val" : "");
-            return "<tr><td>" + (r.date||"-") + "</td><td><strong>" + (r.product||"-") + "</strong></td><td>" + (r.qty||"-") + "</td><td class='" + changeClass + "'>" + chg + "</td><td>" + (r.type||"-") + "</td><td><span class='sev-badge " + sevClass + "'>" + (r.severity||"-") + "</span></td></tr>";
+            var isSpike = (chg.indexOf("+") !== -1 || chg.indexOf("급등") !== -1 || (r.type||"").indexOf("급등") !== -1 || (r.type||"").indexOf("SPIKE") !== -1);
+            var actionText = isSpike ? "<span class='action-tag spike-action'>📦 긴급 발주 생성</span>" : "<span class='action-tag drop-action'>🏷️ 가격 조정 제안</span>";
+            return "<tr><td>" + (r.date||"-") + "</td><td><strong>" + (r.product||"-") + "</strong></td><td>" + (r.qty||"-") + "</td><td class='" + changeClass + "'>" + chg + "</td><td>" + (r.type||"-") + "</td><td><span class='sev-badge " + sevClass + "'>" + (r.severity||"-") + "</span></td><td>" + actionText + "</td></tr>";
         }).join("");
     }
     // Reasons

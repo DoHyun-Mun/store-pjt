@@ -161,7 +161,7 @@ function processToolData(toolData, msgDiv) {
         if (tn === "run_churn_prediction" || d.high_risk_customers || d.high_risk_count) {
             var rawCusts = d.high_risk_customers||d.churn_results||d.customers||[];
             var custs = rawCusts.map(function(c) {
-                return { code: c.CUSTOMER_CODE||c.customer_code||c.code||"", name: c.NAME||c.customer_name||c.name||"", age: c.AGE_GROUP||c.age_group||c.age||"", membership: c.MEMBERSHIP_TYPE||c.membership_type||c.membership||"", city: c.CITY||c.city||"", probability: c.churn_probability||c.churn_score||c.probability||"", risk: c.churn_risk||c.risk||"", factor: c.churn_reason||c.main_factor||c.factor||"" };
+                return { code: c.CUSTOMER_CODE||c.customer_code||c.code||"", name: c.NAME||c.customer_name||c.name||"", age: c.AGE_GROUP||c.age_group||c.age||"", membership: c.MEMBERSHIP_TYPE||c.membership_type||c.membership||"", city: c.CITY||c.city||"", probability: c.churn_probability||c.churn_score||c.probability||"", risk: c.churn_risk||c.risk||"", factor: c.churn_reason||c.main_factor||c.factor||"", store: c.PREFERRED_STORE||c.preferred_store||c.store||"", payment: c.MAIN_PAYMENT||c.main_payment||c.payment||"" };
             });
             var pf = d.metrics||d.performance||d.model_performance||{};
             var fcts = d.top_features||d.factors||d.main_factors||[];

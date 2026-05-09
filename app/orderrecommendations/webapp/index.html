@@ -418,9 +418,11 @@ async function batchCreatePO() {
         if (!productId) { fail++; results.push("\u274C " + productName + ": \uC0C1\uD488 \uBBF8\uBC1C\uACAC"); continue; }
 
         try {
+            var tokenRes = await fetch("/inventory/PurchaseOrders", { method: "HEAD", headers: { "x-csrf-token": "fetch" } });
+            var csrfToken = tokenRes.headers.get("x-csrf-token") || "";
             var res = await fetch("/inventory/PurchaseOrders", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
                 body: JSON.stringify({ product_ID: productId, store_ID: storeId, quantity: qty, unitPrice: prodPriceMap[productId] || 0 })
             });
             if (res.ok) {

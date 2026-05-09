@@ -101,6 +101,7 @@ entity Stores : cuid, managed {
   storeType     : String(20);   // Store / Warehouse / Online
   isActive      : Boolean default true;
   description   : String(1000);
+  dc            : Association to DistributionCenters; // 배송 담당 물류센터
   inventories   : Association to many Inventories on inventories.store = $self;
   storeProducts : Association to many StoreProducts on storeProducts.store = $self;
   customers     : Association to many Customers on customers.preferredStore = $self;

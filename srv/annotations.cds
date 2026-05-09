@@ -367,7 +367,8 @@ annotate service.Stores with @(
     { $Type: 'UI.DataField', Value: city,         Label: '도시', ![@HTML5.CssDefaults]: { width: 'auto' } },
     { $Type: 'UI.DataField', Value: phone,        Label: '연락처', ![@HTML5.CssDefaults]: { width: 'auto' } },
     { $Type: 'UI.DataField', Value: manager,      Label: '담당자', ![@HTML5.CssDefaults]: { width: 'auto' } },
-    { $Type: 'UI.DataField', Value: isActive,     Label: '활성 여부', ![@HTML5.CssDefaults]: { width: 'auto' } }
+    { $Type: 'UI.DataField', Value: isActive,     Label: '활성 여부', ![@HTML5.CssDefaults]: { width: 'auto' } },
+    { $Type: 'UI.DataField', Value: dc.name,       Label: '물류센터', ![@HTML5.CssDefaults]: { width: 'auto' } }
   ],
 
   UI.Facets : [
@@ -404,7 +405,9 @@ annotate service.Stores with @(
       { $Type: 'UI.DataField', Value: name,         Label: '점포명' },
       { $Type: 'UI.DataField', Value: storeType,    Label: '유형' },
       { $Type: 'UI.DataField', Value: isActive,     Label: '활성 여부' },
-      { $Type: 'UI.DataField', Value: description,  Label: '설명' }
+      { $Type: 'UI.DataField', Value: description,  Label: '설명' },
+      { $Type: 'UI.DataField', Value: dc.name,       Label: '물류센터' },
+      { $Type: 'UI.DataField', Value: dc.dcCode,     Label: '센터 코드' }
     ]
   },
 
@@ -1124,3 +1127,5 @@ annotate service.CustomerPurchases with {
     {$Type:'Common.ValueListParameterDisplayOnly', ValueListProperty:'name'}
   ]};
 };
+
+annotate InventoryService.Products with { dc @title: '물류센터'; };

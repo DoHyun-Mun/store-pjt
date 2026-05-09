@@ -40,6 +40,19 @@ module.exports = cds.service.impl(async function () {
     if (req.data.unitPrice && req.data.quantity) {
       req.data.totalAmount = req.data.unitPrice * req.data.quantity;
     }
+
+    // 공급업체 & 물류센터 자동 매핑
+    if (req.data.product_ID && !req.data.supplier_ID) {
+      const pm = await SELECT.one.from('com.inventory.ProductMaterials').where({ product_ID: req.data.product_ID });
+      if (pm) {
+        const mat = await SELECT.one.from('com.inventory.Materials').where({ ID: pm.material_ID });
+        if (mat && mat.supplier_ID) req.data.supplier_ID = mat.supplier_ID;
+      }
+    }
+    if (req.data.store_ID && !req.data.dc_ID) {
+      const store = await SELECT.one.from('com.inventory.Stores').where({ ID: req.data.store_ID });
+      if (store && store.dc_ID) req.data.dc_ID = store.dc_ID;
+    }
   });
 
   // ════════════════════════════════════════════════════════════════════
