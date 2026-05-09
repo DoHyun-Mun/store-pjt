@@ -24,7 +24,10 @@ module.exports = cds.service.impl(async function () {
         content: h.content
       }));
 
-      LOG.info(`사용자 메시지: ${message.substring(0, 100)}...`);
+      LOG.info(`사용자 메시지: ${message.substring(0, 100)}... [히스토리: ${chatHistory.length}건]`);
+      if (chatHistory.length > 0) {
+        LOG.info(`히스토리 마지막 2건: ${JSON.stringify(chatHistory.slice(-2).map(h => ({role:h.role, content:(h.content||'').substring(0,80)})))}`);
+      }
       
       const result = await chat(message, chatHistory);
       

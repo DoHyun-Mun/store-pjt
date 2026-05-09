@@ -206,29 +206,51 @@ function processToolData(toolData, msgDiv) {
             processed = true;
         }
 
-        // 5. 고객 세분화 (run_customer_segmentation)
-        if (tn === "run_customer_segmentation" || d.segments || d.customer_segments) {
-            var segs = d.segments||d.customer_segments||[];
-            // 세그먼트별 집계
+        // 5. 고객 세분화 (run_customer_segmentation 단독 호출일 때만)
+        if (tn === "run_customer_segmentation" && toolData.length === 1) {
+            var rawSegs = d.segments||d.customer_segments||[];
             var segSummary = {};
-            segs.forEach(function(s) {
-                var name = s.segment_name||s.segmentName||"Unknown";
-                if (!segSummary[name]) segSummary[name] = { count: 0, avgRfm: 0, totalRfm: 0 };
-                segSummary[name].count++;
-                segSummary[name].totalRfm += (s.rfm_score||s.rfmScore||0);
-            });
-            Object.keys(segSummary).forEach(function(k) { segSummary[k].avgRfm = (segSummary[k].totalRfm / segSummary[k].count).toFixed(1); });
+            var segGrouped = null; // 그룹핑된 데이터 (객체 형태)
+            var flatSegs = []; // 평면 배열
+
+            // segments가 객체(그룹핑)인지 배열인지 확인
+            if (rawSegs && !Array.isArray(rawSegs) && typeof rawSegs === 'object') {
+                // 그룹핑된 객체: { "VIP_Champions": [...], "At_Risk": [...] }
+                segGrouped = rawSegs;
+                Object.keys(rawSegs).forEach(function(name) {
+                    var customers = rawSegs[name] || [];
+                    segSummary[name] = { count: customers.length, avgRfm: 0, totalRfm: 0 };
+                    customers.forEach(function(c) {
+                        segSummary[name].totalRfm += (c.rfm_score||c.rfmScore||0);
+                        flatSegs.push({ segment_name: name, rfm_score: c.rfm_score||c.rfmScore||0, NAME: c.NAME||c.name||"", AGE_GROUP: c.AGE_GROUP||c.age_group||"", MEMBERSHIP_TYPE: c.MEMBERSHIP_TYPE||c.membership_type||"", CITY: c.CITY||c.city||"" });
+                    });
+                    segSummary[name].avgRfm = customers.length > 0 ? (segSummary[name].totalRfm / customers.length).toFixed(1) : "0";
+                });
+            } else {
+                // 기존 배열 형태
+                flatSegs = Array.isArray(rawSegs) ? rawSegs : [];
+                flatSegs.forEach(function(s) {
+                    var name = s.segment_name||s.segmentName||"Unknown";
+                    if (!segSummary[name]) segSummary[name] = { count: 0, avgRfm: 0, totalRfm: 0 };
+                    segSummary[name].count++;
+                    segSummary[name].totalRfm += (s.rfm_score||s.rfmScore||0);
+                });
+                Object.keys(segSummary).forEach(function(k) { segSummary[k].avgRfm = (segSummary[k].totalRfm / segSummary[k].count).toFixed(1); });
+            }
+
+            var totalCustomers = flatSegs.length;
             var metrics = d.metrics||{};
             // AI 생성 마케팅 전략 (segment_meta)
             var segMeta = d.segment_meta||d["segment_meta"]||null;
             localStorage.setItem("customerSegmentData", JSON.stringify({
                 meta: "고객 세분화 | "+new Date().toLocaleString("ko-KR"),
-                totalCustomers: segs.length+"명",
+                totalCustomers: totalCustomers+"명",
                 nClusters: metrics.n_clusters||Object.keys(segSummary).length,
-                silhouetteScore: metrics.silhouette_score||"-",
+                modelName: d.model_name||metrics.model_name||"-",
                 segmentSummary: segSummary,
                 segmentMeta: segMeta,
-                segments: segs.slice(0, 50) // 상위 50명만
+                segmentGrouped: segGrouped,
+                segments: flatSegs
             }));
             addDetailButton(msgDiv, "👥 고객 세분화 상세 보기", "#188038", "#0070F2", "/customersegments/webapp/index.html", "segmentUpdate");
             processed = true;
@@ -264,6 +286,14 @@ async function sendChatMessage() {
             chatHistory.push({ role: 'user', content: message });
             chatHistory.push({ role: 'assistant', content: data.reply });
             if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+
+            // [NAVIGATE:url] 패턴 감지 → 메뉴 이동 버튼 생성
+            var navMatch = (data.reply || '').match(/\[NAVIGATE:(\/[^\]]+)\]/);
+            if (navMatch) {
+                data.reply = data.reply.replace(/\[NAVIGATE:[^\]]+\]/g, '').trim();
+                msgDiv.innerHTML = renderMarkdown(data.reply);
+                addDetailButton(msgDiv, "📂 해당 메뉴로 이동", "#0070F2", "#4CAF50", navMatch[1], "navigate");
+            }
 
             // toolData가 있으면 JSON 기반으로 처리 (정규식 불필요)
             var toolData = data.toolData ? (typeof data.toolData === 'string' ? JSON.parse(data.toolData) : data.toolData) : null;

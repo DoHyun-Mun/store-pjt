@@ -88,7 +88,7 @@ tr:hover td{background:#F8F9FB}
 <div class="kpi blue"><div class="val" id="kTotal">-</div><div class="lbl">총 고객 수</div></div>
 <div class="kpi green"><div class="val" id="kClusters">-</div><div class="lbl">세그먼트 수</div></div>
 <div class="kpi orange"><div class="val" id="kAtRisk">-</div><div class="lbl">At Risk 고객</div></div>
-<div class="kpi red"><div class="val" id="kSilhouette">-</div><div class="lbl">모델 품질(실루엣)</div></div>
+<div class="kpi red"><div class="val" id="kModel">-</div><div class="lbl">모델</div></div>
 </div>
 
 <!-- Segment Cards with Strategy -->
@@ -103,26 +103,41 @@ tr:hover td{background:#F8F9FB}
 </table>
 </div>
 
-<!-- 고객 상세 -->
-<div class="card">
-<h3>📋 고객 상세 목록 (상위 50명)</h3>
-<div style="max-height:350px;overflow-y:auto;">
-<table id="segTable">
-<thead><tr><th>세그먼트</th><th>Recency</th><th>Frequency</th><th>Monetary</th><th>RFM</th><th>추천 액션</th></tr></thead>
-<tbody></tbody>
-</table>
-</div>
-</div>
+<!-- 고객 상세 (세그먼트별 독립 카드) -->
+<div id="segDetailCards"></div>
 </div>
 
 <script>
 // 세그먼트별 메타 정보 - AI 응답(segment_meta)이 있으면 그걸 우선 사용, 없으면 아래 fallback 사용
 var SEG_META_FALLBACK = {
-    "VIP_Champions": { icon: "👑", color: "vip", desc: "핵심 충성 고객군", strategies: [], effect: "", action: "", channel: "", kpi: "", priority: "high" },
-    "Loyal_Regulars": { icon: "💚", color: "loyal", desc: "안정적 충성 고객군", strategies: [], effect: "", action: "", channel: "", kpi: "", priority: "medium" },
-    "At_Risk": { icon: "⚠️", color: "atrisk", desc: "이탈 위험 고객군", strategies: [], effect: "", action: "", channel: "", kpi: "", priority: "urgent" },
-    "New_Customers": { icon: "🆕", color: "new", desc: "신규 고객군", strategies: [], effect: "", action: "", channel: "", kpi: "", priority: "medium" },
-    "Potential_Growers": { icon: "🌱", color: "grower", desc: "성장 가능성 고객군", strategies: [], effect: "", action: "", channel: "", kpi: "", priority: "medium" }
+    "VIP_Champions": {
+        icon: "👑", color: "vip",
+        desc: "최근 방문 빈도 높고, 구매 금액이 가장 큰 핵심 고객군입니다. 매출의 핵심 동력이며 이탈 시 영향이 큽니다.",
+        strategies: ["프리미엄 리워드 프로그램 (VIP 전용 할인/사은품)", "신상품 우선 체험 초대", "1:1 전담 매니저 배정", "생일/기념일 특별 혜택"],
+        effect: "기대효과: 객단가 +15%, LTV 극대화, 자연 추천으로 신규 유입",
+        action: "VIP 전용 이벤트 초대 발송", channel: "카카오톡/문자", kpi: "재구매율 95%↑", priority: "high"
+    },
+    "Loyal_Regulars": {
+        icon: "💚", color: "loyal",
+        desc: "꾸준히 방문하고 안정적으로 구매하는 충성 고객군입니다. VIP로 업그레이드 가능성이 높은 잠재 우수 고객입니다.",
+        strategies: ["멤버십 등급 업그레이드 유도 (다음 등급까지 N원!)", "크로스셀 추천 (연관 상품)", "친구 추천 보상 프로그램", "정기 구매 구독 할인"],
+        effect: "기대효과: VIP 전환율 +20%, 크로스셀로 객단가 +10%",
+        action: "등급 업그레이드 안내 + 크로스셀 쿠폰", channel: "앱푸시/이메일", kpi: "VIP 전환 20%↑", priority: "medium"
+    },
+    "At_Risk": {
+        icon: "⚠️", color: "atrisk",
+        desc: "한때 활발했으나 최근 방문이 줄어든 이탈 위험 고객군입니다. 즉각적인 재활성화 캠페인이 필요합니다.",
+        strategies: ["\"보고싶어요\" 개인화 메시지 발송", "재방문 시 특별 할인 쿠폰 (30% OFF)", "과거 구매 상품 재입고/신상 알림", "설문조사로 이탈 사유 파악"],
+        effect: "기대효과: 재방문율 +25%, 이탈 방지 → 연간 매출 손실 최소화",
+        action: "재방문 쿠폰(30%) + 개인화 메시지", channel: "카카오톡/문자", kpi: "재방문율 25%↑", priority: "urgent"
+    },
+    "New_Customers": {
+        icon: "🌱", color: "new",
+        desc: "최근 신규 가입하거나 첫 구매를 한 고객군입니다. 초기 경험이 향후 충성도를 결정합니다.",
+        strategies: ["웰컴 할인 쿠폰 (첫 재구매 20% OFF)", "온보딩 가이드 (인기 상품/혜택 안내)", "2회차 구매 리워드 포인트 2배", "카테고리별 추천 상품 큐레이션"],
+        effect: "기대효과: 2회차 구매 전환율 +30%, 초기 이탈 방지",
+        action: "웰컴 시리즈 자동 발송 (D+1, D+3, D+7)", channel: "이메일/앱푸시", kpi: "2회 구매율 30%↑", priority: "medium"
+    }
 };
 
 // 세그먼트 이름 → 아이콘/컬러 매핑
@@ -130,8 +145,7 @@ var SEG_STYLE = {
     "VIP_Champions": { icon: "👑", color: "vip" },
     "Loyal_Regulars": { icon: "💚", color: "loyal" },
     "At_Risk": { icon: "⚠️", color: "atrisk" },
-    "New_Customers": { icon: "🆕", color: "new" },
-    "Potential_Growers": { icon: "🌱", color: "grower" }
+    "New_Customers": { icon: "🌱", color: "new" }
 };
 
 // AI segment_meta를 화면용 메타로 변환
@@ -146,7 +160,7 @@ function buildSegMeta(aiMeta) {
             icon: style.icon,
             color: style.color,
             desc: ai.description || "",
-            strategies: [ai.key_action || ""],
+            strategies: ai.strategies || [ai.key_action || ""],
             effect: ai.expected_effect ? "기대효과: " + ai.expected_effect : "",
             action: ai.key_action || "",
             channel: ai.channel || "",
@@ -174,7 +188,7 @@ function render(d) {
     document.getElementById("segMeta").textContent = d.meta || "";
     document.getElementById("kTotal").textContent = d.totalCustomers || "-";
     document.getElementById("kClusters").textContent = d.nClusters || "-";
-    document.getElementById("kSilhouette").textContent = d.silhouetteScore || "-";
+    document.getElementById("kModel").textContent = d.modelName || "-";
 
     var summary = d.segmentSummary || {};
     // AI segment_meta가 있으면 동적으로 SEG_META 빌드, 없으면 fallback 사용
@@ -199,11 +213,10 @@ function render(d) {
         return '<div class="seg-card ' + meta.color + '">' +
             '<div class="seg-top"><span class="seg-icon">' + meta.icon + '</span><span class="seg-name">' + name.replace(/_/g, ' ') + '</span><span class="seg-count">' + (meta.customerCount || s.count) + '명</span></div>' +
             '<div class="seg-desc">' + meta.desc + '</div>' +
-            (stratHtml ? '<div class="seg-strategy"><h4>📌 핵심 액션</h4><ul>' + stratHtml + '</ul></div>' : '') +
+            (stratHtml ? '<div class="seg-strategy"><h4>📌 마케팅 전략</h4><ul>' + stratHtml + '</ul></div>' : '') +
             (meta.effect ? '<div class="seg-effect">' + meta.effect + '</div>' : '') +
-            '<div class="seg-rfm"><div class="rfm-item"><div class="rfm-val">' + (meta.avgRfm || s.avgRfm) + '</div><div class="rfm-lbl">평균 RFM</div></div>' +
-            (meta.channel ? '<div class="rfm-item"><div class="rfm-val" style="font-size:0.65rem;">' + meta.channel + '</div><div class="rfm-lbl">채널</div></div>' : '') +
-            '</div></div>';
+            '<div class="seg-rfm"><div class="rfm-item"><div class="rfm-val">' + (meta.avgRfm || s.avgRfm) + '</div><div class="rfm-lbl">평균 RFM</div></div></div>' +
+            '</div>';
     }).join("");
 
     // 액션 플랜 테이블
@@ -214,16 +227,77 @@ function render(d) {
         return '<tr><td><strong>' + meta.icon + ' ' + name.replace(/_/g,' ') + '</strong> (' + (meta.customerCount || summary[name].count) + '명)</td><td>' + (meta.action||"-") + '</td><td>' + (meta.channel||"-") + '</td><td>' + (meta.kpi||"-") + '</td><td><span class="priority-badge ' + meta.priority + '">' + meta.priority.toUpperCase() + '</span></td></tr>';
     }).join("");
 
-    // 고객 상세 테이블
-    if (d.segments && d.segments.length > 0) {
-        var tbody = document.querySelector("#segTable tbody");
-        tbody.innerHTML = d.segments.map(function(s) {
-            var name = s.segment_name || s.segmentName || "";
-            var meta = SEG_META[name] || {};
-            var shortAction = meta.action ? meta.action.substring(0, 30) + "..." : "-";
-            return '<tr><td><span class="seg-badge ' + name + '">' + name.replace(/_/g,' ') + '</span></td><td>' + (s.recency_score||s.recencyScore||"-") + '</td><td>' + (s.frequency_score||s.frequencyScore||"-") + '</td><td>' + (s.monetary_score||s.monetaryScore||"-") + '</td><td><strong>' + (s.rfm_score||s.rfmScore||"-") + '</strong></td><td style="font-size:0.65rem;color:#556B82;">' + shortAction + '</td></tr>';
-        }).join("");
+    // 고객 상세 (세그먼트별 독립 카드 - 접기/펼치기)
+    var detailContainer = document.getElementById("segDetailCards");
+    var dataSource = d.segmentGrouped || null;
+
+    // segmentGrouped가 없으면 segments 배열에서 그룹핑
+    if (!dataSource && d.segments && d.segments.length > 0) {
+        dataSource = {};
+        d.segments.forEach(function(s) {
+            var name = s.segment_name || s.segmentName || "Unknown";
+            if (!dataSource[name]) dataSource[name] = [];
+            dataSource[name].push(s);
+        });
     }
+
+    if (dataSource) {
+        detailContainer.innerHTML = '<h3 style="font-size:0.9rem;font-weight:600;margin-bottom:0.75rem;">📋 세그먼트별 고객 상세</h3>' +
+            sortedNames.map(function(name) {
+                var customers = dataSource[name] || [];
+                if (customers.length === 0) return "";
+                var meta = SEG_META[name] || { icon:"📊" };
+                var rows = customers.map(function(c) {
+                    return '<tr><td>' + (c.NAME||c.name||"-") + '</td><td>' + (c.AGE_GROUP||c.age_group||"-") + '</td><td>' + (c.MEMBERSHIP_TYPE||c.membership_type||"-") + '</td><td>' + (c.CITY||c.city||"-") + '</td><td><strong>' + (c.rfm_score||c.rfmScore||"-") + '</strong></td></tr>';
+                }).join("");
+                var isAtRisk = (name === "At_Risk");
+                var btnId = 'campBtn_' + name;
+                var resultId = 'campResult_' + name;
+                return '<div class="card" style="margin-bottom:0.75rem;">' +
+                    '<h3 onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'" style="cursor:pointer;user-select:none;">' +
+                    (meta.icon||"📊") + ' ' + name.replace(/_/g,' ') + ' <span style="font-weight:400;color:#8396A8;font-size:0.72rem;">(' + customers.length + '명) ' + (isAtRisk ? '▲' : '▼') + '</span></h3>' +
+                    '<div style="display:' + (isAtRisk ? 'block' : 'none') + ';margin-top:0.5rem;">' +
+                    '<div style="max-height:250px;overflow-y:auto;">' +
+                    '<table><thead><tr><th>고객명</th><th>연령대</th><th>멤버십</th><th>지역</th><th>RFM</th></tr></thead><tbody>' +
+                    rows + '</tbody></table></div>' +
+                    '<div style="margin-top:0.6rem;padding-top:0.5rem;border-top:1px solid #EEF1F5;">' +
+                    '<button id="' + btnId + '" onclick="runCampaign(\'' + name + '\',' + customers.length + ',\'' + (meta.channel||"앱푸시") + '\',\'' + (meta.action||"캠페인").replace(/'/g,"") + '\')" style="padding:0.45rem 1rem;background:linear-gradient(135deg,#0070F2,#7B2FF2);color:white;border:none;border-radius:8px;font-size:0.72rem;font-weight:600;cursor:pointer;">🎯 마케팅 캠페인 실행</button>' +
+                    '<div id="' + resultId + '" style="margin-top:0.5rem;"></div>' +
+                    '</div></div></div>';
+            }).join("");
+    }
+}
+
+// 마케팅 캠페인 실행 (PoC 시뮬레이션)
+function runCampaign(segName, count, channel, action) {
+    var btn = document.getElementById('campBtn_' + segName);
+    var result = document.getElementById('campResult_' + segName);
+    if (!btn || !result) return;
+    btn.disabled = true;
+    btn.textContent = "⏳ 캠페인 실행 중...";
+    btn.style.background = "#8396A8";
+
+    var channels = channel.split("+").map(function(c){return c.trim();}).filter(function(c){return c;});
+    var pushCount = Math.round(count * 0.9);
+    var emailCount = Math.round(count * 0.8);
+    var couponCount = count;
+
+    setTimeout(function() {
+        btn.textContent = "✅ 캠페인 완료";
+        btn.style.background = "#188038";
+        var displayName = segName.replace(/_/g, ' ');
+        result.innerHTML = '<div style="padding:0.75rem;background:#E6F4EA;border-radius:8px;border-left:4px solid #188038;font-size:0.72rem;line-height:1.8;">' +
+            '<div style="font-weight:700;margin-bottom:0.3rem;">✅ ' + displayName + ' 캠페인 실행 완료 (시뮬레이션)</div>' +
+            '<div>📱 앱 푸시: <strong>' + pushCount + '건</strong> 발송</div>' +
+            '<div>📧 이메일: <strong>' + emailCount + '건</strong> 발송</div>' +
+            '<div>🎁 쿠폰/혜택: <strong>' + couponCount + '건</strong> 생성</div>' +
+            '<div>📋 핵심 액션: <strong>' + action + '</strong></div>' +
+            '<div>📡 채널: <strong>' + channel + '</strong></div>' +
+            '<div style="margin-top:0.3rem;color:#556B82;">💡 예상 반응률: <strong>' + (Math.round(Math.random()*20+25)) + '~' + (Math.round(Math.random()*15+45)) + '%</strong></div>' +
+            '<div style="margin-top:0.2rem;color:#8396A8;font-size:0.65rem;">※ PoC 시뮬레이션입니다. 실제 구현 시 SAP Emarsys/마케팅 자동화 연동</div>' +
+            '</div>';
+        setTimeout(function(){ btn.disabled = false; btn.textContent = "🎯 마케팅 캠페인 실행"; btn.style.background = "linear-gradient(135deg,#0070F2,#7B2FF2)"; }, 8000);
+    }, 2000);
 }
 
 window.addEventListener("storage", function(e) { if (e.key === "customerSegmentData") loadData(); });
