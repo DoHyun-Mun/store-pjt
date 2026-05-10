@@ -1,44 +1,107 @@
-# 📦 상품 재고 관리 시스템 (Inventory Management)
+# 🤖 AI 점포 운영 시스템 (Store AI Operations)
 
-> SAP CAP + Fiori Elements 기반의 종합 재고 관리 시스템
+> SAP BTP + AI Core + HANA Cloud 기반의 AI 융합 점포 운영 관리 시스템
 
 ## 📋 목차
 - [프로젝트 개요](#프로젝트-개요)
+- [시스템 아키텍처](#시스템-아키텍처)
 - [기술 스택](#기술-스택)
 - [프로젝트 구조](#프로젝트-구조)
-- [로컬 개발](#로컬-개발)
-- [Kyma 배포](#kyma-배포)
-- [HANA Graph 연동](#hana-graph-연동)
+- [주요 기능](#주요-기능)
+- [AI 인텔리전스](#ai-인텔리전스)
 - [데이터 모델](#데이터-모델)
 - [API 엔드포인트](#api-엔드포인트)
+- [로컬 개발](#로컬-개발)
+- [Kyma 배포](#kyma-배포)
 
 ---
 
 ## 🎯 프로젝트 개요
 
-이 프로젝트는 **SAP Cloud Application Programming Model (CAP)** 과 **SAP Fiori Elements**를 활용한 종합 재고 관리 시스템입니다.
+### 프로젝트 목적
 
-### 주요 기능
-- 🏪 **매장 관리** - 매장 정보 및 재고 현황 관리
-- 📦 **상품 관리** - 카테고리별 상품 및 원재료 관리
-- 📊 **재고 추적** - 실시간 재고 수량 및 이력 추적
-- 🛒 **발주/수주 관리** - 공급업체 발주 및 수주 처리
-- 👥 **고객 관리** - 고객 정보 및 구매 이력 관리
-- 🤖 **AI 분석** - 수요 예측, 이상 탐지, 고객 세그먼트 분석
+**SAP BTP의 핵심 기술(CAP, AI Core, HANA Cloud, Kyma)을 결합하여, AI가 실시간으로 비즈니스 데이터를 분석하고 대화형으로 의사결정을 지원하는 차세대 점포 운영 시스템**을 구현합니다.
+
+### 핵심 가치
+
+| 영역 | 가치 |
+|------|------|
+| 🤖 AI 대화형 운영 | 자연어로 재고 조회, 발주 생성, 예측 분석 수행 |
+| 📊 데이터 기반 의사결정 | ML 수요 예측, 이상 탐지, 고객 세분화 |
+| 🔄 End-to-End 프로세스 | 발주 → 입고검수 → 인보이스 → 배송 → 점포입고 |
+| 🏗️ SAP 표준 아키텍처 | CAP + Fiori Elements + OData V4 + XSUAA |
+
+### 주요 기능 요약
+
+- 🏪 **마스터 데이터** - 상품, 점포, 공급업체, 자재, 물류센터 관리
+- 🛒 **구매 프로세스 (P2P)** - 발주 → 입고검수 → 인보이스 정산
+- 🚚 **물류/재고** - 배송지시 → 점포입고 → 재고 관리
+- 💰 **판매 & 고객** - 고객 관리, 구매 이력, 일별 매출
+- 🤖 **AI 인텔리전스** - 수요 예측, 발주 추천, 이탈 예측, 고객 세분화, 이상 탐지
+- 💬 **AI Chat** - 자연어 대화로 전체 시스템 운영 (MCP Tool Calling)
+
+---
+
+## 🏗️ 시스템 아키텍처
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        사용자 (Browser)                           │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────┐
+│                    Kyma Istio Gateway (APIRule)                   │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────┐
+│              SAP Approuter (:5000) ←→ XSUAA (인증)               │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────┐
+│                    CAP Backend (:4004)                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐     │
+│  │ OData V4 API │  │ Chat Service │  │ Static Files (UI) │     │
+│  │ (Fiori/CRUD) │  │ (AI Core)    │  │ (Dashboard/AI앱)  │     │
+│  └──────┬───────┘  └──────┬───────┘  └───────────────────┘     │
+└─────────┼──────────────────┼────────────────────────────────────┘
+          │                  │
+          ▼                  ▼
+┌──────────────────┐  ┌──────────────────────────────────────────┐
+│  HANA Cloud      │  │          SAP AI Core                      │
+│  ┌────────────┐  │  │  ┌──────────────────────────────────┐   │
+│  │ HDI Schema │  │  │  │ Orchestration (GPT-4o/Claude)    │   │
+│  │ + Graph    │  │  │  │ + Tool Calling (MCP Protocol)    │   │
+│  │ + Vector   │  │  │  └──────────────┬───────────────────┘   │
+│  └────────────┘  │  └─────────────────┼───────────────────────┘
+└──────────────────┘                    │
+                                        ▼
+                              ┌──────────────────────┐
+                              │  MCP Tool Server     │
+                              │  (Python FastAPI)    │
+                              │  ┌────────────────┐  │
+                              │  │ 12 Tools:      │  │
+                              │  │ • odata_crud   │  │
+                              │  │ • ML 예측 5종  │  │
+                              │  │ • Graph/Vector │  │
+                              │  └────────────────┘  │
+                              └──────────────────────┘
+```
 
 ---
 
 ## 🛠 기술 스택
 
-| 구분 | 기술 |
-|------|------|
-| Backend | SAP CAP (Node.js) |
-| Frontend | SAP Fiori Elements (OData V4) |
-| Database | SAP HANA Cloud (Production) / SQLite (Dev) |
-| Authentication | SAP XSUAA |
-| Deployment | SAP BTP Kyma Runtime |
-| Container | Docker + GitHub Container Registry |
-| Graph | SAP HANA Cloud Graph Engine (GRAPH_USER_01) |
+| 구분 | 기술 | 역할 |
+|------|------|------|
+| **Backend** | SAP CAP (Node.js) | OData V4 서비스, 비즈니스 로직 |
+| **Frontend (CRUD)** | SAP Fiori Elements | 마스터 데이터 관리 (annotations 기반 자동 UI) |
+| **Frontend (AI)** | Vanilla HTML/JS | AI 대시보드, 채팅, 분석 결과 시각화 |
+| **Database** | SAP HANA Cloud | HDI Container, Graph Engine, Vector Engine |
+| **AI** | SAP AI Core Orchestration | LLM (GPT-4o/Claude) + Tool Calling |
+| **AI Tools** | MCP Server (Python FastAPI) | 12개 비즈니스 도구 (CRUD, ML, Graph, Vector) |
+| **인증** | SAP XSUAA | OAuth2 기반 인증/인가 |
+| **런타임** | SAP BTP Kyma (Kubernetes) | Docker 컨테이너 배포, Istio Service Mesh |
+| **CI/CD** | GitHub + GHCR + deploy-kyma.sh | Docker 빌드 → Push → 자동 배포 |
 
 ---
 
@@ -46,44 +109,251 @@
 
 ```
 store-pjt/
-├── db/
-│   ├── schema.cds              # 데이터 모델 정의
-│   ├── data/                   # 초기 데이터 (CSV)
-│   └── src/
-│       └── roles/
-│           ├── .hdiconfig              # HDI artifact 타입 설정
-│           ├── graph_access.hdbrole    # HANA Graph 접근 역할 (SELECT 권한)
-│           └── graph_user_grants.hdbgrants  # Grantor 권한 설정
-├── srv/
-│   ├── service.cds             # 서비스 정의 (25개 엔티티)
-│   ├── service.js              # 커스텀 핸들러 (발주/수주 상태 관리)
-│   └── annotations.cds         # 공통 어노테이션
-├── app/
-│   ├── index.html              # Fiori Launchpad
-│   ├── categories/             # 카테고리 관리 앱
-│   ├── products/               # 상품 관리 앱
-│   ├── stores/                 # 매장 관리 앱
-│   ├── inventories/            # 재고 관리 앱
-│   ├── suppliers/              # 공급업체 관리 앱
-│   ├── materials/              # 원재료 관리 앱
-│   ├── storeproducts/          # 매장별 상품 관리 앱
-│   ├── supplyorders/           # 발주 관리 앱
-│   ├── purchaseorders/         # 수주 관리 앱
-│   ├── customers/              # 고객 관리 앱
-│   ├── customerpurchases/      # 고객 구매 이력 앱
-│   ├── dailysales/             # 일별 매출 앱
-│   ├── inventorysnapshots/     # 재고 스냅샷 앱
-│   ├── menus/                  # 메뉴 관리 앱
-│   ├── churnpredictions/       # 이탈 예측 앱
-│   ├── customersegments/       # 고객 세그먼트 앱
-│   ├── salesanomalies/         # 매출 이상 탐지 앱
-│   ├── demandforecasts/        # 수요 예측 앱
-│   └── orderrecommendations/   # 발주 추천 앱
-├── k8s/                        # Kubernetes(Kyma) 매니페스트
-├── approuter/                  # SAP Approuter (인증 프록시)
-├── scripts/                    # 자동화 스크립트
-└── chart/                      # Helm Chart
+├── app/                            # 프론트엔드
+│   ├── index.html                  # 메인 대시보드 (커스텀 HTML Shell)
+│   ├── css/                        # 스타일시트
+│   │   ├── main.css                # 대시보드/사이드바/ShellBar 스타일
+│   │   └── chat.css                # AI 채팅 패널 스타일
+│   ├── js/                         # JavaScript
+│   │   ├── app.js                  # 메뉴 로딩, 라우팅, 네비게이션
+│   │   ├── chat.js                 # AI 채팅 + Tool 데이터 처리
+│   │   ├── dashboard.js            # 대시보드 KPI/차트
+│   │   └── supply-chain.js         # 공급망 네트워크 시각화
+│   ├── img/                        # 로고 이미지
+│   │
+│   │── # Fiori Elements 앱 (UI5 기반 CRUD)
+│   ├── categories/                 # 분류 관리
+│   ├── products/                   # 상품 관리
+│   ├── materials/                  # 자재 관리
+│   ├── stores/                     # 점포 관리
+│   ├── suppliers/                  # 공급업체 관리
+│   ├── distributioncenters/        # 물류센터 관리
+│   ├── storeproducts/              # 점포별 상품 관리
+│   ├── purchaseorders/             # 발주 관리 (PO)
+│   ├── goodsreceipts/              # 입고검수 (GR)
+│   ├── invoices/                   # 인보이스 (IR)
+│   ├── transferorders/             # 배송지시 (TO)
+│   ├── storereceipts/              # 점포입고 (SR)
+│   ├── inventories/                # 재고 관리 (IM)
+│   ├── customers/                  # 고객 관리
+│   ├── customerpurchases/          # 구매 이력
+│   ├── dailysales/                 # 일별 매출
+│   ├── menus/                      # 메뉴 관리
+│   │
+│   │── # AI 커스텀 앱 (순수 HTML/JS)
+│   ├── demandforecasts/            # 수요 예측 결과 시각화
+│   ├── orderrecommendations/       # AI 발주 추천
+│   ├── churnpredictions/           # 고객 이탈 예측
+│   ├── customersegments/           # 고객 세분화 + 마케팅 전략
+│   └── salesanomalies/             # 매출 이상 탐지
+│
+├── srv/                            # 백엔드 서비스
+│   ├── service.cds                 # OData 서비스 정의 (30+ 엔티티)
+│   ├── service.js                  # 비즈니스 로직 (발주, 재고, KPI)
+│   ├── chat-service.cds            # AI Chat 서비스 정의
+│   ├── chat-service.js             # Chat 핸들러 (AI Core 호출)
+│   ├── annotations.cds             # 공통 어노테이션
+│   ├── logistics-annotations.cds   # 물류 엔티티 어노테이션
+│   └── lib/
+│       └── aicore-client.js        # AI Core Orchestration + MCP Tool Calling
+│
+├── db/                             # 데이터베이스
+│   ├── schema.cds                  # 전체 데이터 모델 (28개 엔티티)
+│   ├── data/                       # 초기 데이터 (CSV, 28개 파일)
+│   └── src/                        # HDI artifacts (Graph 권한 등)
+│
+├── k8s/                            # Kubernetes(Kyma) 배포 매니페스트
+├── approuter/                      # SAP Approuter (인증 프록시)
+├── scripts/                        # 자동화 스크립트 (배포, 데이터 생성)
+├── chart/                          # Helm Chart
+├── Dockerfile                      # CAP 백엔드 Docker
+├── Dockerfile.hdi-deployer         # HDI Deployer Docker
+└── server.js                       # CAP 서버 엔트리포인트
 ```
+
+---
+
+## 🌟 주요 기능
+
+### 1. AI 대시보드
+
+메인 화면(`app/index.html`)에서 실시간 KPI와 AI 인사이트를 한눈에 확인:
+- 💰 최근 매출 (전일 대비 변화율)
+- 🏥 재고 건전성 점수 (100점 만점)
+- 🚨 결품 위험 건수
+- 📋 발주 대기 건수
+- 📈 매출 트렌드 + AI 예측 차트
+- 🗺️ 점포별 재고 건전성 맵
+- 🎯 AI 발주 추천 Top 5
+- 🔍 이상 탐지 결과
+- 🔗 공급망 네트워크 그래프 (vis.js)
+
+### 2. AI Chat (Store AI 어시스턴트)
+
+우측 사이드 패널에서 자연어로 시스템 운영:
+- 데이터 조회: "강남본점 재고 현황 알려줘"
+- 데이터 생성: "새 상품 등록해줘" → 필수 필드 질문 → 미리보기 → 확인 → 생성
+- AI 분석: "수요 예측 해줘", "고객 세분화 해줘"
+- 메뉴 안내: "재고 관리 메뉴 어디있어?" → [📂 해당 메뉴로 이동] 버튼
+
+### 3. 유통 프로세스 (P2P + SCM)
+
+```
+공급업체 → PurchaseOrders(발주) → GoodsReceipts(입고검수) → Invoices(정산)
+                                         ↓
+                               TransferOrders(배송지시) → StoreReceipts(점포입고)
+                                                                ↓
+                                                         Inventories(재고)
+```
+
+각 단계별 상태 관리 (Draft → Submitted → Approved → Received 등)
+
+### 4. 메뉴 시스템
+
+DB 기반 3계층 메뉴 트리 구조:
+- 대메뉴 (상단 탭): 마스터 데이터, 구매, 물류·재고, 판매&고객, AI 인텔리전스, 시스템
+- 중메뉴 (사이드바 그룹): 상품, 점포, 거래처 등
+- 소메뉴 (사이드바 항목): 분류 관리, 상품 관리 등
+
+---
+
+## 🤖 AI 인텔리전스
+
+### SAP AI Core Orchestration
+
+`srv/lib/aicore-client.js`에서 SAP AI Core의 Orchestration API를 사용하여 LLM + Tool Calling을 구현:
+
+```javascript
+const client = new OrchestrationClient({
+  promptTemplating: {
+    model: { name: 'anthropic--claude-4.6-sonnet' },
+    prompt: { template: [{ role: 'system', content: '...' }], tools: mcpTools }
+  }
+});
+```
+
+### MCP Tool Server (12개 도구)
+
+| # | Tool | 기능 | 주요 파라미터 |
+|---|------|------|-------------|
+| 1 | `odata_crud` | 모든 엔티티 CRUD + Draft 워크플로우 | entity, operation, data, confirm |
+| 2 | `query_sales` | 일별 매출 조회 | store_id, start_date, end_date |
+| 3 | `query_customers` | 고객 정보 + 구매이력 | customer_id, membership_type |
+| 4 | `search_products` | 상품 검색 (키워드/Vector) | keyword, use_vector |
+| 5 | `graph_co_purchase` | HANA Graph: 함께 구매 분석 | product_id, top_n |
+| 6 | `graph_supply_chain` | HANA Graph: 공급망 의존도 | supplier_id |
+| 7 | `vector_search` | HANA Vector: 유사도 검색 | query, search_type |
+| 8 | `run_demand_forecast` | 수요 예측 (Prophet+XGBoost) | store_id, product_id |
+| 9 | `run_anomaly_detection` | 매출 이상 탐지 | store_id, metric |
+| 10 | `run_churn_prediction` | 고객 이탈 예측 | segment, city |
+| 11 | `run_customer_segmentation` | 고객 세분화 (KMeans+RFM) | - |
+| 12 | `search_reorder_products` | 발주 추천 (Safety Stock+EOQ) | store_id, urgency |
+
+### AI 분석 결과 화면
+
+| 앱 | 위치 | 기능 |
+|----|------|------|
+| 수요 예측 | `/demandforecasts/webapp/` | 7일 예측 차트 + 테이블 + 발주 액션 |
+| 발주 추천 | `/orderrecommendations/webapp/` | ML vs RPT-1 비교 + 일괄 발주 생성 |
+| 이탈 예측 | `/churnpredictions/webapp/` | 이탈 확률 + 리텐션 캠페인 실행 |
+| 고객 세분화 | `/customersegments/webapp/` | RFM 세그먼트 카드 + 마케팅 전략 + 캠페인 실행 |
+| 이상 탐지 | `/salesanomalies/webapp/` | Z-Score 기반 이상 항목 + 대응 가이드 |
+
+### Orchestration 규칙 (시스템 프롬프트)
+
+1. 가능성 질문("~할 수 있어?") → Tool 없이 답변
+2. 실행 요청("~해줘") → Tool 호출
+3. CREATE/UPDATE/DELETE → confirm=false 미리보기
+4. confirm_required → 사용자 확인 요청
+5. 긍정 답변 → confirm=true 재호출 (동일 파라미터, READ 금지)
+6. 부정 답변 → 취소
+7. 엔티티 생성 → 필수 필드 부족 시 질문 → 확보 후 호출
+8. 메뉴 안내 → [NAVIGATE:URL] 포함 → 이동 버튼 자동 생성
+
+---
+
+## 📊 데이터 모델
+
+### 핵심 엔티티 (28개)
+
+#### 마스터 데이터
+| 엔티티 | 설명 |
+|--------|------|
+| Categories | 상품 분류 |
+| Products | 상품 (원가/마진율/판매가 자동계산) |
+| Materials | 자재 |
+| ProductMaterials | 상품-자재 BOM |
+| Stores | 점포 (물류센터 연결) |
+| StoreProducts | 점포별 상품 |
+| Suppliers | 공급업체 |
+| DistributionCenters | 물류센터 |
+
+#### 구매/물류 프로세스
+| 엔티티 | 설명 |
+|--------|------|
+| PurchaseOrders | 발주 (Draft→Submitted→Approved→Received) |
+| GoodsReceipts / Items | 입고검수 |
+| Invoices / Items | 인보이스/세금계산서 |
+| TransferOrders / Items | 배송지시 |
+| StoreReceipts / Items | 점포입고 |
+| Inventories | 재고 (가용재고 자동계산) |
+
+#### 고객/매출
+| 엔티티 | 설명 |
+|--------|------|
+| Customers | 고객 (회원등급, 구매통계) |
+| CustomerPurchases / Items | 고객 구매 이력 |
+| DailySales | 일별 매출 집계 |
+
+#### AI 분석 결과
+| 엔티티 | 설명 |
+|--------|------|
+| DemandForecasts | 수요 예측 (Prophet) |
+| OrderRecommendations | 발주 추천 |
+| ChurnPredictions | 이탈 예측 |
+| CustomerSegments | 고객 세분화 (RFM+KMeans) |
+| SalesAnomalies | 매출 이상 탐지 |
+
+#### 시스템
+| 엔티티 | 설명 |
+|--------|------|
+| MenuItems | 메뉴 관리 (3계층 트리, self-reference) |
+
+---
+
+## 🔌 API 엔드포인트
+
+기본 URL: `https://store-pjt.c56380c.kyma.ondemand.com`
+
+### OData V4 (Fiori Elements + CRUD)
+| 경로 | 설명 |
+|------|------|
+| `/inventory/Products` | 상품 |
+| `/inventory/Categories` | 분류 |
+| `/inventory/Stores` | 점포 |
+| `/inventory/Inventories` | 재고 |
+| `/inventory/PurchaseOrders` | 발주 (Actions: submit/approve/reject/receive) |
+| `/inventory/GoodsReceipts` | 입고검수 |
+| `/inventory/Invoices` | 인보이스 |
+| `/inventory/TransferOrders` | 배송지시 |
+| `/inventory/StoreReceipts` | 점포입고 |
+| `/inventory/Customers` | 고객 |
+| `/inventory/DailySales` | 일별 매출 |
+| `/inventory/MenuItems` | 메뉴 |
+
+### AI Chat
+| 경로 | 설명 |
+|------|------|
+| `POST /chat/sendMessage` | AI 대화 (message + history) |
+| `GET /chat/healthCheck` | 서비스 상태 확인 |
+
+### Dashboard Function Imports
+| 경로 | 설명 |
+|------|------|
+| `/inventory/getDashboardKPIs()` | 매출, 건전성, 결품위험, 발주대기 |
+| `/inventory/getAIInsights()` | AI 인사이트 카드 (최대 5개) |
+| `/inventory/getStoreHealthScores()` | 점포별 건전성 점수 |
+| `/inventory/getSalesForecastTrend()` | 매출 실적 + AI 예측 결합 |
 
 ---
 
@@ -91,133 +361,34 @@ store-pjt/
 
 ### 사전 요구사항
 - Node.js 22+
-- npm 또는 yarn
 - SAP CDS CLI (`npm i -g @sap/cds-dk`)
+- SAP AI Core Service Key (환경변수 또는 `.env`)
 
 ### 설치 및 실행
 
 ```bash
-# 의존성 설치
 npm install
-
-# 개발 서버 시작 (SQLite)
 cds watch
-
-# 특정 앱으로 직접 열기
-npm run watch-categories
-npm run watch-products
-npm run watch-stores
+# → http://localhost:4004
 ```
 
-브라우저에서 `http://localhost:4004` 접속
+### 환경변수 (.env)
+```
+MCP_SERVER_URL=https://mcp-tools.c56380c.kyma.ondemand.com
+AICORE_SERVICE_KEY={"clientid":"...","clientsecret":"...","url":"..."}
+```
 
 ---
 
 ## ☸️ Kyma 배포
 
-### 사전 요구사항
-- SAP BTP Kyma Runtime 활성화
-- kubectl + kubeconfig 설정
-- Docker Desktop + GHCR 인증
-- SAP BTP Service Operator 설치됨
-
-### 배포 방법
+### 배포 방법 (자동)
 
 ```bash
-# 자동 배포 (권장) - 9단계 자동 실행
-./scripts/deploy-kyma.sh
-
-# 또는 kubeconfig 경로 지정
-./scripts/deploy-kyma.sh kubeconfig-dev.yaml
+./scripts/deploy-kyma.sh /path/to/kubeconfig.yaml
 ```
 
-### 자동 배포 스크립트 (`deploy-kyma.sh`) 단계
-
-| 단계 | 설명 |
-|------|------|
-| Step 0 | 사전 요구사항 확인 (kubeconfig, kubectl, docker, 클러스터 연결) |
-| Step 1 | Namespace `store-pjt` 생성 |
-| Step 2 | Docker 이미지 빌드 & Push (CAP Backend, HDI Deployer, Approuter) |
-| Step 3 | BTP Service Operator 리소스 배포 (XSUAA + HANA HDI) |
-| Step 4 | HDI Deployer 실행 (스키마 + CSV 데이터 + HDI roles 배포) |
-| Step 5 | Secrets & ConfigMap 배포 |
-| Step 6 | CAP Backend 배포 |
-| Step 7 | Approuter 배포 |
-| Step 8 | APIRule (Istio Gateway) 배포 |
-| Step 9 | 배포 상태 확인 및 URL 출력 |
-
-### 배포 아키텍처
-
-```
-[Browser] → [Kyma Istio Gateway]
-                   ↓
-             [APIRule: store-pjt]
-                   ↓
-             [Approuter :5000]  ←→  [XSUAA (인증)]
-                   ↓
-             [CAP Backend :4004]
-                   ↓
-             [HANA Cloud HDI Container]
-                   ↓
-             [GRAPH_USER_01] ← graph_access.hdbrole (SELECT 권한)
-```
-
-### Kubernetes 리소스
-
-| 리소스 | 파일 | 설명 |
-|--------|------|------|
-| Namespace | `k8s/namespace.yaml` | `store-pjt` namespace |
-| XSUAA ServiceInstance | `k8s/xsuaa-serviceinstance.yaml` | BTP Service Operator → XSUAA 프로비저닝 |
-| XSUAA ServiceBinding | `k8s/xsuaa-servicebinding.yaml` | XSUAA Secret 바인딩 |
-| HANA ServiceInstance | `k8s/hana-serviceinstance.yaml` | HANA HDI Container 프로비저닝 |
-| HANA ServiceBinding | `k8s/hana-servicebinding.yaml` | HANA Secret 바인딩 |
-| Graph Grantor Secret | `k8s/graph-grantor-secret.yaml` | GRAPH_USER_01 접속 정보 (HDI grantor용) |
-| HDI Deployer Job | `k8s/hdi-deployer-job.yaml` | DB 스키마 + 데이터 + HDI roles 배포 |
-| UAA Services Secret | `k8s/uaa-default-services-secret.yaml` | Approuter 인증 설정 |
-| XS-App ConfigMap | `k8s/approuter-xs-app-configmap.yaml` | Approuter 라우팅 설정 |
-| CAP Deployment | `k8s/deployment.yaml` | CAP 백엔드 서버 |
-| CAP Service | `k8s/service.yaml` | ClusterIP 서비스 |
-| Approuter Deployment | `k8s/approuter-deployment.yaml` | SAP Approuter (인증 프록시) |
-| Approuter Service | `k8s/approuter-service.yaml` | Approuter ClusterIP |
-| APIRule | `k8s/apirule.yaml` | Istio Gateway 외부 접근 |
-
-### Docker 이미지
-
-```bash
-# CAP Backend (linux/amd64 for Kyma)
-docker build --platform linux/amd64 -t ghcr.io/dohyun-mun/store-pjt:latest .
-docker push ghcr.io/dohyun-mun/store-pjt:latest
-
-# Approuter
-cd approuter
-docker build --platform linux/amd64 -t ghcr.io/dohyun-mun/store-pjt-approuter:latest .
-docker push ghcr.io/dohyun-mun/store-pjt-approuter:latest
-cd ..
-
-# HDI Deployer
-docker build --platform linux/amd64 -f Dockerfile.hdi-deployer -t ghcr.io/dohyun-mun/store-pjt-hdi-deployer:latest .
-docker push ghcr.io/dohyun-mun/store-pjt-hdi-deployer:latest
-```
-
-### 유용한 명령어
-
-```bash
-# CAP Backend만 재시작
-KUBECONFIG=kubeconfig-dev.yaml kubectl rollout restart deployment store-pjt -n store-pjt
-
-# Approuter도 재시작
-KUBECONFIG=kubeconfig-dev.yaml kubectl rollout restart deployment approuter -n store-pjt
-
-# Pod 상태 확인
-KUBECONFIG=kubeconfig-dev.yaml kubectl get pods -n store-pjt
-
-# HDI Deployer 재실행
-KUBECONFIG=kubeconfig-dev.yaml kubectl delete job hdi-deployer -n store-pjt --ignore-not-found
-KUBECONFIG=kubeconfig-dev.yaml kubectl apply -f k8s/hdi-deployer-job.yaml
-
-# HDI Deployer 로그 확인
-KUBECONFIG=kubeconfig-dev.yaml kubectl logs -l job-name=hdi-deployer -n store-pjt --tail=30
-```
+9단계 자동 실행: Namespace → Docker 빌드 → Push → BTP Services → HDI Deploy → Secrets → CAP → Approuter → APIRule
 
 ### 접속 URL
 
@@ -225,137 +396,21 @@ KUBECONFIG=kubeconfig-dev.yaml kubectl logs -l job-name=hdi-deployer -n store-pj
 https://store-pjt.c56380c.kyma.ondemand.com/
 ```
 
----
+### 유용한 명령어
 
-## 🔗 HANA Graph 연동
+```bash
+# Pod 상태 확인
+kubectl get pods -n store-pjt
 
-### 개요
+# 재배포
+kubectl rollout restart deployment store-pjt -n store-pjt
 
-SAP HANA Cloud Graph Engine을 통해 엔티티 간 관계를 그래프로 시각화하고 분석할 수 있습니다. 이를 위해 전용 DB 사용자(`GRAPH_USER_01`)에게 HDI 컨테이너의 테이블 접근 권한을 부여합니다.
-
-### HDI Role 구조
-
+# 로그 확인
+kubectl logs -f deploy/store-pjt -n store-pjt
 ```
-db/src/roles/
-├── .hdiconfig                    # artifact 타입 매핑
-├── graph_access.hdbrole          # SELECT 권한 역할 (22개 테이블)
-└── graph_user_grants.hdbgrants   # Grantor 권한 설정 (현재 비활성)
-```
-
-### `graph_access.hdbrole`
-
-HDI 컨테이너 내 모든 테이블에 대한 SELECT 권한을 포함하는 역할:
-- `COM_INVENTORY_CATEGORIES`, `COM_INVENTORY_PRODUCTS`, `COM_INVENTORY_STORES` 등 22개 테이블
-
-### HDI Deployer 설정
-
-`k8s/hdi-deployer-job.yaml`에서 HDI Deployer는 다음 볼륨을 마운트합니다:
-
-| 볼륨 | Secret | 용도 |
-|------|--------|------|
-| `hana-hdi-secret-vol` | `hana-hdi-secret` | HDI 컨테이너 접속 정보 |
-| `service-binding-root` | `hana-hdi-secret` | CDS 서비스 바인딩 경로 |
-| `graph-grantor-vol` | `graph-grantor` | GRAPH_USER_01 접속 정보 |
-
-환경변수:
-- `TARGET_CONTAINER=hana-hdi` — 여러 HANA 서비스가 바인딩될 때 대상 컨테이너 지정
-
-### GRAPH_USER_01에게 역할 부여 (수동)
-
-> ⚠️ `.hdbgrants`는 **외부 → HDI 컨테이너** 방향만 지원하므로, **HDI 컨테이너 → 외부 사용자** 방향의 권한 부여는 SQL로 직접 실행해야 합니다.
-
-HANA Cloud Database Explorer에서 HDI 컨테이너의 `#OO` (Object Owner) 사용자로 접속하여 실행:
-
-```sql
--- HDI 컨테이너 스키마명 확인 후 실행
-GRANT "<HDI_CONTAINER_SCHEMA>"."graph_access" TO GRAPH_USER_01;
-
--- 실제 예시 (컨테이너 스키마: 1BDCACB99B5B477498F1D59894934173)
-GRANT "1BDCACB99B5B477498F1D59894934173"."graph_access" TO GRAPH_USER_01;
-```
-
-또는 HANA Cloud Central의 **User Management**에서 직접 역할을 할당할 수 있습니다.
-
----
-
-## 📊 데이터 모델
-
-### 핵심 엔티티
-
-| 엔티티 | 설명 | 주요 필드 |
-|--------|------|----------|
-| Categories | 상품 카테고리 | name, description |
-| Products | 상품 | name, price, stock, category |
-| Stores | 매장 | name, address, phone |
-| Inventories | 재고 | product, store, quantity |
-| Suppliers | 공급업체 | name, contact, email |
-| Materials | 원재료 | name, unit, unitPrice |
-| StoreProducts | 매장별 상품 | store, product, price |
-| ProductMaterials | 상품-자재 BOM | product, material, quantity |
-| SupplyOrders | 발주 | supplier, orderDate, status |
-| SupplyOrderItems | 발주 품목 | supplyOrder, product, quantity |
-| PurchaseOrders | 수주 | customer, orderDate, status |
-| Customers | 고객 | name, email, phone, grade |
-| CustomerPurchases | 고객 구매 | customer, purchaseDate |
-| CustomerPurchaseItems | 구매 품목 | purchase, product, quantity |
-| DailySales | 일별 매출 | store, product, date, amount |
-| InventorySnapshots | 재고 스냅샷 | store, product, date, quantity |
-| MenuItems | 메뉴 | name, price, category (3계층 트리) |
-
-### AI 분석 엔티티
-
-| 엔티티 | 설명 |
-|--------|------|
-| DemandForecasts | 수요 예측 결과 |
-| SalesAnomalies | 매출 이상 탐지 결과 |
-| ChurnPredictions | 고객 이탈 예측 |
-| CustomerSegments | 고객 세그먼트 분석 |
-| OrderRecommendations | 자동 발주 추천 |
-
-### 서비스 액션 (상태 관리)
-
-**PurchaseOrders (수주)**:
-- `submitOrder()` — Draft → Submitted
-- `approveOrder()` — Submitted → Approved
-- `rejectOrder(reason)` — Submitted → Rejected
-- `receiveOrder(warehouse)` — Approved → Received (재고 반영)
-
-**SupplyOrders (발주)**:
-- `confirmOrder()` — Draft → Confirmed
-- `shipOrder()` — Confirmed → Shipped
-- `deliverOrder()` — Shipped → Delivered (재고 반영)
-- `cancelOrder(reason)` — Draft/Confirmed → Cancelled
-
----
-
-## 🔌 API 엔드포인트
-
-기본 URL: `http://localhost:4004` (개발) 또는 `https://store-pjt.c56380c.kyma.ondemand.com` (Kyma)
-
-| 경로 | 설명 |
-|------|------|
-| `/odata/v4/inventory/Categories` | 카테고리 CRUD |
-| `/odata/v4/inventory/Products` | 상품 CRUD |
-| `/odata/v4/inventory/Stores` | 매장 CRUD |
-| `/odata/v4/inventory/Inventories` | 재고 CRUD |
-| `/odata/v4/inventory/Suppliers` | 공급업체 CRUD |
-| `/odata/v4/inventory/Materials` | 원재료 CRUD |
-| `/odata/v4/inventory/StoreProducts` | 매장별 상품 CRUD |
-| `/odata/v4/inventory/SupplyOrders` | 발주 CRUD + 상태 액션 |
-| `/odata/v4/inventory/PurchaseOrders` | 수주 CRUD + 상태 액션 |
-| `/odata/v4/inventory/Customers` | 고객 CRUD |
-| `/odata/v4/inventory/CustomerPurchases` | 고객 구매 이력 CRUD |
-| `/odata/v4/inventory/DailySales` | 일별 매출 CRUD |
-| `/odata/v4/inventory/InventorySnapshots` | 재고 스냅샷 CRUD |
-| `/odata/v4/inventory/MenuItems` | 메뉴 CRUD |
-| `/odata/v4/inventory/DemandForecasts` | 수요 예측 조회 |
-| `/odata/v4/inventory/OrderRecommendations` | 발주 추천 조회 |
-| `/odata/v4/inventory/ChurnPredictions` | 이탈 예측 조회 |
-| `/odata/v4/inventory/CustomerSegments` | 고객 세그먼트 조회 |
-| `/odata/v4/inventory/SalesAnomalies` | 매출 이상 탐지 조회 |
 
 ---
 
 ## 📝 라이선스
 
-UNLICENSED - Private Project
+UNLICENSED - Private Project (SAP BTP AI Workshop 2026)
