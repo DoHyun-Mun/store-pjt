@@ -10,8 +10,7 @@
       "target": "/chat/$1",
       "destination": "cap-backend",
       "authenticationType": "xsuaa",
-      "csrfProtection": false,
-      "timeout": 120000
+      "csrfProtection": false
     },
     {
       "source": "^/odata/v4/(.*)$",
