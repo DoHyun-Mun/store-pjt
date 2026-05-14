@@ -90,22 +90,57 @@
     background: rgba(124,77,255,0.08); padding: 1px 5px; border-radius: 4px;
     font-size: 0.78rem; font-family: 'Fira Code', monospace;
 }
-/* Markdown Table */
+/* Markdown Content Spacing */
+.chat-msg.assistant h1, .chat-msg.assistant h2, .chat-msg.assistant h3,
+.chat-msg.assistant h4, .chat-msg.assistant h5, .chat-msg.assistant h6 {
+    margin: 16px 0 10px; line-height: 1.4;
+}
+.chat-msg.assistant h1 { font-size: 1.1rem; }
+.chat-msg.assistant h2 { font-size: 1rem; }
+.chat-msg.assistant h3 { font-size: 0.92rem; }
+.chat-msg.assistant p {
+    margin: 10px 0; line-height: 1.7;
+}
+.chat-msg.assistant ul, .chat-msg.assistant ol {
+    margin: 10px 0; padding-left: 18px; line-height: 1.7;
+}
+.chat-msg.assistant li {
+    margin: 6px 0;
+}
+.chat-msg.assistant hr {
+    margin: 14px 0; border: none; border-top: 1px solid #E8D5F5;
+}
+.chat-msg.assistant blockquote {
+    margin: 12px 0; padding: 10px 14px; border-left: 3px solid var(--chat-primary);
+    background: rgba(124,77,255,0.04); border-radius: 0 6px 6px 0;
+}
+
+/* Markdown Table - 스크롤 wrapper */
+.chat-msg.assistant .table-scroll {
+    overflow-x: auto; margin: 12px 0;
+    border-radius: 10px; border: 1px solid #E0E4EA;
+    background: white;
+}
 .chat-msg.assistant table {
-    width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 0.75rem;
+    border-collapse: separate; border-spacing: 0;
+    font-size: 0.73rem; width: 100%; table-layout: auto;
+    background: white; border-radius: 10px;
+    margin: 0;
 }
 .chat-msg.assistant th {
-    background: rgba(124,77,255,0.12); color: #4A148C; font-weight: 600;
-    padding: 6px 8px; border: 1px solid #D1C4E9; text-align: left; white-space: nowrap;
+    background: #5E35B1; color: white; font-weight: 600;
+    padding: 9px 14px; border: none; text-align: left;
+    font-size: 0.72rem; white-space: nowrap;
 }
 .chat-msg.assistant td {
-    padding: 5px 8px; border: 1px solid #E8E0F0; vertical-align: top;
+    padding: 9px 14px; border-bottom: 1px solid #EEF1F5; vertical-align: top;
+    color: #1D2D3E; background: white;
 }
-.chat-msg.assistant tr:nth-child(even) td {
-    background: rgba(124,77,255,0.03);
+.chat-msg.assistant tr:last-child td {
+    border-bottom: none;
 }
 .chat-msg.assistant tr:hover td {
-    background: rgba(124,77,255,0.08);
+    background: #F5F0FF;
 }
 .chat-msg.system {
     align-self: center; background: #FFF3E0; color: #E65100;

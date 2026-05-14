@@ -32,16 +32,21 @@ function appendMessage(role, content) {
 }
 
 function renderMarkdown(text) {
+    var html;
     if (typeof marked !== "undefined" && marked.parse) {
         marked.setOptions({ gfm: true, breaks: true });
-        return marked.parse(text);
+        html = marked.parse(text);
+    } else {
+        html = text
+            .replace(/```(\w*)\n?([\s\S]*?)```/g, "<pre><code>$2</code></pre>")
+            .replace(/`([^`]+)`/g, "<code>$1</code>")
+            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+            .replace(/\*(.+?)\*/g, "<em>$1</em>")
+            .replace(/\n/g, "<br>");
     }
-    return text
-        .replace(/```(\w*)\n?([\s\S]*?)```/g, "<pre><code>$2</code></pre>")
-        .replace(/`([^`]+)`/g, "<code>$1</code>")
-        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-        .replace(/\*(.+?)\*/g, "<em>$1</em>")
-        .replace(/\n/g, "<br>");
+    // table을 스크롤 wrapper로 감싸기
+    html = html.replace(/<table>/g, '<div class="table-scroll"><table>').replace(/<\/table>/g, '</table></div>');
+    return html;
 }
 
 function setTyping(show) {
