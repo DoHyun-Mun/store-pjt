@@ -1,0 +1,46 @@
+# ══════════════════════════════════════════════════════════════
+# Internal traffic 허용 AuthorizationPolicy
+# ──────────────────────────────────────────────────────────────
+# 문제: store-pjt-api APIRule이 만든 AuthorizationPolicy(store-pjt-api-*)는
+#   selector: app=store-pjt 으로 모든 backend Pod에 RBAC를 걸지만,
+#   to.operation.hosts 가 'store-pjt-api.c56380c.kyma.ondemand.com' 으로 제한됨
+#   → approuter→backend 내부 호출(host=store-pjt:4004 또는 ClusterIP)은 어떤
+#     rule에도 매치 안 되어 default deny → 403 "RBAC: access denied"
+#
+# 해결: 내부 cluster.local 트래픽을 명시적으로 허용하는 정책 추가.
+#   approuter SA(=store-pjt/default) 또는 같은 namespace 모든 SA 허용.
+# ══════════════════════════════════════════════════════════════
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: store-pjt-allow-internal
+  namespace: store-pjt
+  labels:
+    app: store-pjt
+spec:
+  selector:
+    matchLabels:
+      app: store-pjt
+  action: ALLOW
+  rules:
+    # ── (1) Approuter Pod에서 들어오는 내부 트래픽 허용 ───────
+    - from:
+        - source:
+            namespaces:
+              - store-pjt
+      to:
+        - operation:
+            ports:
+              - "4004"
+    # ── (2) ingressgateway 에서 직접 오는 트래픽도 허용 (host 무관) ──
+    #     store-pjt host(approuter)는 다른 deployment로 가지만,
+    #     혹시 메인 host 직접 접근(API 직접 호출) 시 대비
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account
+      to:
+        - operation:
+            hosts:
+              - "store-pjt.c56380c.kyma.ondemand.com"
+              - "store-pjt-api.c56380c.kyma.ondemand.com"
