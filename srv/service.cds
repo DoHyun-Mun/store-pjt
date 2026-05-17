@@ -63,11 +63,15 @@ service InventoryService @(path: '/inventory') {
    * PurchaseOrders - 발주 마스터
    * - status_criticality: status에 따라 ObjectStatus criticality 매핑
    *   (after READ에서 채워짐, 0=None, 1=Error, 2=Warning, 3=Success)
+   *
+   * NOTE: 'null as ... : Integer' 패턴은 sqlite에선 OK이지만 HANA + Draft 조합에서
+   *   _drafts 테이블 select에 실제 컬럼으로 SQL이 만들어져 'invalid column name' 에러 발생.
+   *   → virtual 키워드로 선언해서 DB SQL에 포함되지 않게 처리. 값은 after READ 핸들러에서 주입.
    */
   @odata.draft.enabled
   entity PurchaseOrders as projection on db.PurchaseOrders {
     *,
-    null as status_criticality : Integer
+    virtual null as status_criticality : Integer
   }
   actions {
     /** 승인 요청: Draft → Submitted */
@@ -136,11 +140,12 @@ service InventoryService @(path: '/inventory') {
 
   /**
    * MenuItems - 메뉴 관리 (3계층 트리 구조)
+   * NOTE: levelText는 service-only 가상 필드 → virtual 사용 (HANA Draft 호환)
    */
   @odata.draft.enabled
   entity MenuItems as projection on db.MenuItems {
     *,
-    null as levelText : String(10) @title: '레벨구분'
+    virtual null as levelText : String(10) @title: '레벨구분'
   };
 
   // ════════════════════════════════════════════════════════════════════
