@@ -411,6 +411,123 @@ kubectl logs -f deploy/store-pjt -n store-pjt
 
 ---
 
+## 🔐 보안 / Secret 관리
+
+### Secret 관리 원칙
+
+- `k8s/*-secret.yaml` 은 **절대 git commit 금지** (`.gitignore`로 차단)
+- 새로운 환경에서는 `k8s/*-secret.example.yaml` 을 복사해서 placeholder를 채움
+- 모든 자격증명은 BTP Cockpit / HANA Cockpit에서 발급받아 로컬 secret 파일에만 저장
+- 실수 commit 방지를 위해 `gitleaks` pre-commit hook 사용 (아래 셋업 참조)
+
+### 신규 개발자 셋업 (Clone 후 1회)
+
+```bash
+# 1) gitleaks 설치
+brew install gitleaks               # macOS
+# (Linux: https://github.com/gitleaks/gitleaks#installing 참조)
+
+# 2) pre-commit hook 활성화
+git config core.hooksPath .githooks
+
+# 3) Secret 파일 준비
+cp k8s/aicore-secret.example.yaml         k8s/aicore-secret.yaml
+cp k8s/graph-grantor-secret.example.yaml  k8s/graph-grantor-secret.yaml
+# → 각 파일의 <PLACEHOLDER> 를 실제 값으로 교체
+
+# 4) (선택) 작업 트리에 secret 누출 없는지 자가 점검
+gitleaks detect --source . --no-git --config .gitleaks.toml -v
+```
+
+### 🔁 Secret Rotation 절차 (유출 의심 시)
+
+#### 1. XSUAA Service Key 회전 (Blue-Green, 다운타임 ~0)
+
+```bash
+export KUBECONFIG=$(pwd)/kubeconfig-dev.yaml
+
+# 1) 새 ServiceBinding 생성 (이름만 다르게)
+cat <<EOF | kubectl apply -f -
+apiVersion: services.cloud.sap.com/v1
+kind: ServiceBinding
+metadata:
+  name: xsuaa-binding-v2
+  namespace: store-pjt
+spec:
+  serviceInstanceName: xsuaa-instance
+  secretName: xsuaa-binding-secret-v2
+EOF
+
+# 2) approuter-deployment.yaml 의 secretName 을 -v2 로 변경 후 재배포
+#    (vi/sed 등으로 secretName: xsuaa-binding-secret → xsuaa-binding-secret-v2)
+kubectl apply -f k8s/approuter-deployment.yaml
+kubectl rollout restart deployment/approuter -n store-pjt
+
+# 3) 동작 검증 (브라우저 로그인) 후 기존 binding 삭제
+kubectl delete servicebinding xsuaa-binding -n store-pjt    # 유출 credential 무효화
+
+# 4) (선택) 이름 원복 — 동일 절차를 반대로 한 번 더
+```
+
+#### 2. AI Core Service Key 회전
+
+```bash
+# 1) BTP Cockpit → AI Core Service Instance → Service Keys
+#    → 기존 key 삭제 → 새 key 발급 → JSON 복사
+# 2) k8s/aicore-secret.yaml 의 AICORE_SERVICE_KEY 에 새 JSON 붙여넣기
+# 3) 적용 + Pod 재시작
+kubectl apply -f k8s/aicore-secret.yaml
+kubectl rollout restart deployment/store-pjt -n store-pjt
+```
+
+#### 3. HANA Graph 사용자 비밀번호 회전
+
+```sql
+-- HANA Database Explorer 에서:
+ALTER USER GRAPH_USER_01 PASSWORD "<NEW_PASSWORD>" NO FORCE_FIRST_PASSWORD_CHANGE;
+```
+
+```bash
+# k8s/graph-grantor-secret.yaml 의 password 필드를 동일한 새 값으로 변경 후
+kubectl apply -f k8s/graph-grantor-secret.yaml
+# graph-grantor 는 hdi-deployer Job 에서만 사용되므로,
+# 다음 HDI deploy 시 자동 반영됨 (즉시 재시작 불필요)
+```
+
+#### 4. Git history 에 노출된 경우 (포함 commit 정리)
+
+```bash
+# 1) 안전 백업 (mirror)
+cd ..
+git clone --mirror https://github.com/DoHyun-Mun/store-pjt.git \
+    store-pjt-backup-$(date +%Y%m%d-%H%M).git
+
+# 2) git-filter-repo 로 히스토리에서 영구 제거
+cd store-pjt
+brew install git-filter-repo   # 미설치 시
+git filter-repo --invert-paths \
+  --path k8s/aicore-secret.yaml \
+  --path k8s/graph-grantor-secret.yaml
+
+# 3) gitleaks 재검증
+gitleaks detect --source . --config .gitleaks.toml --redact
+
+# 4) origin remote 재등록 + force push
+git remote add origin https://github.com/DoHyun-Mun/store-pjt.git
+git push --force origin --all
+git push --force origin --tags
+
+# ⚠️ 다른 협업자가 있다면 사전 공지 후, 모두 다시 clone 받도록 안내 필요
+```
+
+### 자동화된 누출 차단
+
+- `.gitleaks.toml` — SAP/k8s 환경에 맞춘 커스텀 룰셋
+- `.githooks/pre-commit` — staged 변경분에 대해 `gitleaks protect --staged` 실행
+- 위반 시 commit이 차단됨. 정 우회가 필요하면 `git commit --no-verify` (권장하지 않음)
+
+---
+
 ## 📝 라이선스
 
 UNLICENSED - Private Project (SAP BTP AI Workshop 2026)
